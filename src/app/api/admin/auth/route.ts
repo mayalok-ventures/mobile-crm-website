@@ -5,6 +5,8 @@ import {
   generateAdminSessionToken,
 } from "@/lib/security";
 
+export const runtime = "edge";
+
 const EXPECTED_ADMIN_TOKEN =
   process.env.ADMIN_ACCESS_TOKEN || "Kunalxca2026@";
 

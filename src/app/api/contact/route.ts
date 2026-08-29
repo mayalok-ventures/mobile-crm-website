@@ -6,6 +6,8 @@ import {
   checkRateLimit,
 } from "@/lib/security";
 
+export const runtime = "edge";
+
 interface ContactSubmission {
   name?: string;
   email?: string;
