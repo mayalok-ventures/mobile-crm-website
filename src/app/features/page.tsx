@@ -192,7 +192,7 @@ export default function FeaturesPage() {
           id="mobile-field-ops"
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, amount: 0.05 }}
           variants={sectionRevealVariants}
           className="py-20 lg:py-28 bg-white"
         >
@@ -295,7 +295,7 @@ export default function FeaturesPage() {
           id="automation"
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, amount: 0.05 }}
           variants={sectionRevealVariants}
           className="py-20 lg:py-28 bg-[#FAFAFA]"
         >
@@ -387,7 +387,7 @@ export default function FeaturesPage() {
           id="telemetry"
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, amount: 0.05 }}
           variants={sectionRevealVariants}
           className="py-20 lg:py-28 bg-white"
         >
@@ -479,7 +479,7 @@ export default function FeaturesPage() {
           id="security"
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, amount: 0.05 }}
           variants={sectionRevealVariants}
           className="py-20 lg:py-28 bg-[#FAFAFA]"
         >
@@ -561,7 +561,7 @@ export default function FeaturesPage() {
       <motion.section
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: "-80px" }}
+        viewport={{ once: true, amount: 0.05 }}
         variants={sectionRevealVariants}
         className="py-20 lg:py-28 bg-white border-t border-slate-200/80"
       >

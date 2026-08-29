@@ -309,7 +309,7 @@ export default function SahyakHomePage() {
       <motion.section
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
+        viewport={{ once: true, amount: 0.05 }}
         variants={sectionRevealVariants}
         className="py-16 lg:py-24 bg-slate-50/70 border-y border-slate-200/80"
       >
@@ -417,7 +417,7 @@ export default function SahyakHomePage() {
       <motion.section
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
+        viewport={{ once: true, amount: 0.05 }}
         variants={sectionRevealVariants}
         className="py-20 lg:py-28 bg-white border-b border-slate-200/80"
       >
@@ -605,7 +605,7 @@ export default function SahyakHomePage() {
       <motion.section
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
+        viewport={{ once: true, amount: 0.05 }}
         variants={sectionRevealVariants}
         className="py-20 lg:py-28 bg-[#FAFAFA]"
       >
@@ -778,7 +778,7 @@ export default function SahyakHomePage() {
       <motion.section
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: "-80px" }}
+        viewport={{ once: true, amount: 0.05 }}
         variants={sectionRevealVariants}
         className="py-20 lg:py-28 bg-white"
       >

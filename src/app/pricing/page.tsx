@@ -272,7 +272,7 @@ export default function PricingPage() {
       <motion.section
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: "-80px" }}
+        viewport={{ once: true, amount: 0.05 }}
         variants={sectionRevealVariants}
         className="py-16 lg:py-24 bg-white"
       >
@@ -381,7 +381,7 @@ export default function PricingPage() {
       <motion.section
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
+        viewport={{ once: true, amount: 0.05 }}
         variants={sectionRevealVariants}
         className="py-16 lg:py-24 bg-[#FAFAFA] border-y border-slate-200/80"
       >
@@ -552,7 +552,7 @@ export default function PricingPage() {
       <motion.section
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: "-80px" }}
+        viewport={{ once: true, amount: 0.05 }}
         variants={sectionRevealVariants}
         className="py-16 lg:py-20 bg-white"
       >
@@ -589,7 +589,7 @@ export default function PricingPage() {
       <motion.section
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: "-80px" }}
+        viewport={{ once: true, amount: 0.05 }}
         variants={sectionRevealVariants}
         className="py-16 lg:py-24 bg-[#FAFAFA] border-t border-slate-200/80"
       >

@@ -218,7 +218,7 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
       data-scroll-behavior="smooth"
-      className={`${plusJakarta.variable} ${inter.variable} scroll-smooth antialiased overflow-x-hidden`}
+      className={`${plusJakarta.variable} ${inter.variable} scroll-smooth antialiased overflow-x-clip`}
     >
       <head>
         <script
@@ -226,9 +226,9 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
       </head>
-      <body className="min-h-screen bg-[#FAFAFA] text-slate-900 flex flex-col font-sans selection:bg-slate-900 selection:text-white overflow-x-hidden max-w-full">
+      <body className="min-h-screen bg-[#FAFAFA] text-slate-900 flex flex-col font-sans selection:bg-slate-900 selection:text-white overflow-x-clip max-w-full">
         <GlobalNavbar />
-        <main className="flex-1 flex flex-col w-full overflow-x-hidden max-w-full">
+        <main className="flex-1 flex flex-col w-full overflow-x-clip max-w-full">
           <PageTransition>{children}</PageTransition>
         </main>
         <GlobalFooter />
