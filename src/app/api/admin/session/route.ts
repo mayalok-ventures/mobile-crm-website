@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ authenticated: false });
     }
 
-    const { valid } = verifyAdminSessionToken(sessionCookie.value);
+    const { valid } = await verifyAdminSessionToken(sessionCookie.value);
     if (!valid) {
       return NextResponse.json({ authenticated: false });
     }

@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Issue cryptographic signed session token
-    const sessionToken = generateAdminSessionToken("admin_master");
+    const sessionToken = await generateAdminSessionToken("admin_master");
 
     const response = NextResponse.json({
       success: true,

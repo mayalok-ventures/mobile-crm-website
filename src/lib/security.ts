@@ -1,7 +1,5 @@
-import crypto from "crypto";
-
 /**
- * Enterprise Application Hardening & Input Sanitization
+ * Enterprise Application Hardening & Input Sanitization (Edge Runtime Compatible)
  */
 
 // HTML escaping to prevent XSS payloads in lead fields
@@ -54,18 +52,15 @@ export function sanitizePhone(input: unknown): { valid: boolean; phone: string }
   };
 }
 
-// Timing-safe constant-time string comparison (mitigates timing attacks)
+// Timing-safe constant-time string comparison (mitigates timing attacks across all runtimes)
 export function timingSafeCompare(a: string, b: string): boolean {
   if (typeof a !== "string" || typeof b !== "string") return false;
-  const bufA = Buffer.from(a, "utf-8");
-  const bufB = Buffer.from(b, "utf-8");
-  if (bufA.length !== bufB.length) {
-    // Hash them both to equalize length and preserve constant time
-    const hashA = crypto.createHash("sha256").update(bufA).digest();
-    const hashB = crypto.createHash("sha256").update(bufB).digest();
-    return crypto.timingSafeEqual(hashA, hashB) && false;
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
   }
-  return crypto.timingSafeEqual(bufA, bufB);
+  return result === 0;
 }
 
 // Sliding-window IP Rate Limiter
@@ -86,7 +81,6 @@ export function checkRateLimit(
 
   if (!record || now > record.resetAt) {
     rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
-    // Garbage collection if store grows large
     if (rateLimitStore.size > 2000) {
       for (const [k, v] of rateLimitStore.entries()) {
         if (now > v.resetAt) rateLimitStore.delete(k);
@@ -107,35 +101,54 @@ export function checkRateLimit(
   };
 }
 
-// Session Token Generation for Admin Authentication
+// Session Token Generation for Admin Authentication (Edge WebCrypto HMAC)
 const SESSION_SECRET =
   process.env.ADMIN_SESSION_SECRET || "sahyak_crm_enterprise_sec_vault_2026_kunal_secure";
 
-export function generateAdminSessionToken(adminId: string): string {
-  const issuedAt = Date.now();
-  const payload = `${adminId}:${issuedAt}`;
-  const hmac = crypto
-    .createHmac("sha256", SESSION_SECRET)
-    .update(payload)
-    .digest("hex");
-  return Buffer.from(`${payload}:${hmac}`).toString("base64url");
+function bufferToHex(buffer: ArrayBuffer): string {
+  return Array.from(new Uint8Array(buffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
-export function verifyAdminSessionToken(token: string): { valid: boolean; adminId?: string } {
+async function computeHmac(payload: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(SESSION_SECRET);
+  const key = await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(payload)
+  );
+  return bufferToHex(signature);
+}
+
+export async function generateAdminSessionToken(adminId: string): Promise<string> {
+  const issuedAt = Date.now();
+  const payload = `${adminId}:${issuedAt}`;
+  const hmac = await computeHmac(payload);
+  return btoa(`${payload}:${hmac}`);
+}
+
+export async function verifyAdminSessionToken(token: string): Promise<{ valid: boolean; adminId?: string }> {
   try {
-    const raw = Buffer.from(token, "base64url").toString("utf-8");
+    const raw = atob(token);
     const [adminId, issuedAtStr, hmac] = raw.split(":");
     if (!adminId || !issuedAtStr || !hmac) return { valid: false };
 
     const issuedAt = parseInt(issuedAtStr, 10);
+    if (isNaN(issuedAt)) return { valid: false };
     // 24 hour session expiration
     if (Date.now() - issuedAt > 24 * 60 * 60 * 1000) return { valid: false };
 
     const payload = `${adminId}:${issuedAt}`;
-    const expectedHmac = crypto
-      .createHmac("sha256", SESSION_SECRET)
-      .update(payload)
-      .digest("hex");
+    const expectedHmac = await computeHmac(payload);
 
     if (timingSafeCompare(hmac, expectedHmac)) {
       return { valid: true, adminId };
