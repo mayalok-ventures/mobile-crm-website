@@ -148,16 +148,57 @@ export default function AdminDashboardPage() {
     }
     verifySession();
 
-    try {
-      const savedLeads = localStorage.getItem("sahyak_live_leads");
-      if (savedLeads) {
-        setLeads(JSON.parse(savedLeads));
-      } else {
+    async function loadLiveLeads() {
+      try {
+        const res = await fetch("/api/contact");
+        const data = await res.json();
+        if (data.success && Array.isArray(data.leads) && data.leads.length > 0) {
+          const formattedServerLeads: LeadSubmission[] = data.leads.map((l: {
+            id?: string;
+            requestId?: string;
+            submittedAt: string;
+            name: string;
+            email: string;
+            phone: string;
+            teamSize?: string;
+            requirement?: string;
+            inquiryType?: string;
+            status?: "New" | "Contacted" | "Qualified" | "In Pipeline";
+          }) => ({
+            id: l.id || l.requestId || `lead_${Date.now()}`,
+            date: new Date(l.submittedAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            name: l.name,
+            email: l.email,
+            phone: l.phone,
+            teamSize: l.teamSize || "5-20 Closers",
+            message: l.requirement || l.inquiryType || "Website Inquiry",
+            status: l.status || "New",
+          }));
+          setLeads(formattedServerLeads);
+          return;
+        }
+      } catch {
+        // Fallback to localStorage
+      }
+
+      try {
+        const savedLeads = localStorage.getItem("sahyak_live_leads");
+        if (savedLeads) {
+          setLeads(JSON.parse(savedLeads));
+        } else {
+          setLeads([]);
+        }
+      } catch {
         setLeads([]);
       }
-    } catch {
-      setLeads([]);
     }
+
+    loadLiveLeads();
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {

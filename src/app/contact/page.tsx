@@ -15,6 +15,7 @@ import {
   Building2,
   ArrowRight,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 
 export default function ContactPage() {
@@ -29,10 +30,12 @@ export default function ContactPage() {
   });
 
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus("sending");
+    setErrorMessage("");
 
     try {
       const res = await fetch("/api/contact", {
@@ -41,13 +44,49 @@ export default function ContactPage() {
         body: JSON.stringify(formData),
       });
 
-      if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.success) {
+        // Sync to client-side localStorage so it appears in /admin dashboard immediately
+        try {
+          const currentLeads = JSON.parse(localStorage.getItem("sahyak_live_leads") || "[]");
+          const newLead = {
+            id: data.lead?.id || `lead_${Date.now()}`,
+            date: new Date().toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            teamSize: formData.teamSize,
+            message: formData.message || `${formData.industry} vertical consultation request`,
+            status: "New",
+          };
+          localStorage.setItem("sahyak_live_leads", JSON.stringify([newLead, ...currentLeads]));
+        } catch {
+          // localStorage unavailable
+        }
+
         setStatus("success");
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          company: "",
+          teamSize: "5-20 Closers",
+          industry: "Real Estate",
+          message: "",
+        });
       } else {
         setStatus("error");
+        setErrorMessage(data.error || "Submission failed. Please check your inputs and try again.");
       }
     } catch {
       setStatus("error");
+      setErrorMessage("Network error. Please check your connection and try again.");
     }
   };
 
@@ -266,6 +305,14 @@ export default function ContactPage() {
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-[#0077ff] focus:border-[#0077ff] transition-all bg-slate-50/50"
                     />
                   </div>
+
+                  {/* Error Alert Banner */}
+                  {status === "error" && errorMessage && (
+                    <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-2.5 text-xs text-rose-700 animate-in fade-in">
+                      <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                      <span>{errorMessage}</span>
+                    </div>
+                  )}
 
                   {/* Submit Button */}
                   <button
