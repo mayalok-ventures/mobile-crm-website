@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -48,6 +48,7 @@ import {
   Trash2,
   Inbox,
   Sparkles,
+  RefreshCw,
 } from "lucide-react";
 
 // Real-time Traffic Telemetry (Baseline Analytics)
@@ -133,7 +134,69 @@ export default function AdminDashboardPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 6;
 
-  // Load Real Leads & Check persisted session via secure HTTP-only cookie
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Live Leads Fetcher supporting Server Storage & Local Storage
+  const fetchLiveLeads = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const res = await fetch("/api/contact", { cache: "no-store" });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.leads)) {
+        const formattedServerLeads: LeadSubmission[] = data.leads.map((l: {
+          id?: string;
+          requestId?: string;
+          submittedAt: string;
+          name: string;
+          email: string;
+          phone: string;
+          company?: string;
+          teamSize?: string;
+          requirement?: string;
+          inquiryType?: string;
+          status?: "New" | "Contacted" | "Qualified" | "In Pipeline";
+        }) => ({
+          id: l.id || l.requestId || `lead_${Date.now()}`,
+          date: new Date(l.submittedAt).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          name: l.name,
+          email: l.email,
+          phone: l.phone,
+          teamSize: l.teamSize || "5-20 Closers",
+          message: l.requirement || l.inquiryType || "Website Inquiry",
+          status: l.status || "New",
+        }));
+        setLeads(formattedServerLeads);
+        try {
+          localStorage.setItem("sahyak_live_leads", JSON.stringify(formattedServerLeads));
+        } catch {
+          // Ignored
+        }
+        return;
+      }
+    } catch {
+      // Fallback to localStorage
+    } finally {
+      setIsRefreshing(false);
+    }
+
+    try {
+      const savedLeads = localStorage.getItem("sahyak_live_leads");
+      if (savedLeads) {
+        setLeads(JSON.parse(savedLeads));
+      } else {
+        setLeads([]);
+      }
+    } catch {
+      setLeads([]);
+    }
+  }, []);
+
+  // Check persisted session & auto-refresh leads every 5 seconds
   useEffect(() => {
     async function verifySession() {
       try {
@@ -147,59 +210,14 @@ export default function AdminDashboardPage() {
       }
     }
     verifySession();
+    fetchLiveLeads();
 
-    async function loadLiveLeads() {
-      try {
-        const res = await fetch("/api/contact");
-        const data = await res.json();
-        if (data.success && Array.isArray(data.leads) && data.leads.length > 0) {
-          const formattedServerLeads: LeadSubmission[] = data.leads.map((l: {
-            id?: string;
-            requestId?: string;
-            submittedAt: string;
-            name: string;
-            email: string;
-            phone: string;
-            teamSize?: string;
-            requirement?: string;
-            inquiryType?: string;
-            status?: "New" | "Contacted" | "Qualified" | "In Pipeline";
-          }) => ({
-            id: l.id || l.requestId || `lead_${Date.now()}`,
-            date: new Date(l.submittedAt).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-            name: l.name,
-            email: l.email,
-            phone: l.phone,
-            teamSize: l.teamSize || "5-20 Closers",
-            message: l.requirement || l.inquiryType || "Website Inquiry",
-            status: l.status || "New",
-          }));
-          setLeads(formattedServerLeads);
-          return;
-        }
-      } catch {
-        // Fallback to localStorage
-      }
+    const interval = setInterval(() => {
+      fetchLiveLeads();
+    }, 5000);
 
-      try {
-        const savedLeads = localStorage.getItem("sahyak_live_leads");
-        if (savedLeads) {
-          setLeads(JSON.parse(savedLeads));
-        } else {
-          setLeads([]);
-        }
-      } catch {
-        setLeads([]);
-      }
-    }
-
-    loadLiveLeads();
-  }, []);
+    return () => clearInterval(interval);
+  }, [fetchLiveLeads]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -217,6 +235,7 @@ export default function AdminDashboardPage() {
       if (res.ok && data.success) {
         setIsAuthenticated(true);
         setAuthError("");
+        await fetchLiveLeads();
       } else {
         setAuthError(data.error || "Invalid access token. Unauthorized access logged.");
       }
@@ -235,8 +254,13 @@ export default function AdminDashboardPage() {
     setAuthKeyInput("");
   };
 
-  const clearAllLeads = () => {
-    if (confirm("Are you sure you want to delete all lead records? This cannot be undone.")) {
+  const clearAllLeads = async () => {
+    if (confirm("Are you sure you want to delete all lead records? This will purge both local and server records.")) {
+      try {
+        await fetch("/api/contact", { method: "DELETE" });
+      } catch {
+        // Ignored
+      }
       localStorage.removeItem("sahyak_live_leads");
       setLeads([]);
     }
@@ -775,6 +799,17 @@ export default function AdminDashboardPage() {
                     <option value="In Pipeline">In Pipeline</option>
                     <option value="Contacted">Contacted</option>
                   </select>
+
+                  {/* Refresh Button */}
+                  <button
+                    onClick={() => fetchLiveLeads()}
+                    disabled={isRefreshing}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0084ff] border border-blue-200 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                    title="Refresh live leads"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+                    <span className="hidden sm:inline">Refresh</span>
+                  </button>
 
                   {/* Clear All Leads (if any) */}
                   {leads.length > 0 && (

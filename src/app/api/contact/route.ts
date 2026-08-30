@@ -5,25 +5,15 @@ import {
   sanitizePhone,
   checkRateLimit,
 } from "@/lib/security";
+import {
+  getAllLeads,
+  saveLead,
+  clearLeads,
+  StoredLead,
+} from "@/lib/leads-store";
 
 export const runtime = "nodejs";
 
-export interface StoredLead {
-  id: string;
-  requestId: string;
-  submittedAt: string;
-  name: string;
-  email: string;
-  phone: string;
-  company: string;
-  teamSize: string;
-  requirement: string;
-  inquiryType: string;
-  status: "New" | "Contacted" | "Qualified" | "In Pipeline";
-}
-
-// In-memory server lead store (persists across requests during runtime)
-const inMemoryLeads: StoredLead[] = [];
 const duplicateSubmissionSet = new Set<string>();
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 mins
 const MAX_REQUESTS_PER_WINDOW = 30; // Generous window
@@ -40,10 +30,19 @@ function getClientIp(req: NextRequest): string {
 }
 
 export async function GET() {
+  const leads = await getAllLeads();
   return NextResponse.json({
     success: true,
-    count: inMemoryLeads.length,
-    leads: inMemoryLeads,
+    count: leads.length,
+    leads,
+  });
+}
+
+export async function DELETE() {
+  await clearLeads();
+  return NextResponse.json({
+    success: true,
+    message: "All leads cleared successfully.",
   });
 }
 
@@ -148,7 +147,7 @@ export async function POST(req: NextRequest) {
 
     const requestId = `req_sy_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`;
 
-    // 7. Canonical Stored Lead Record
+    // 7. Canonical Stored Lead Record (Persisted to disk and D1)
     const storedLead: StoredLead = {
       id: `lead_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`,
       requestId,
@@ -161,10 +160,10 @@ export async function POST(req: NextRequest) {
       requirement,
       inquiryType,
       status: "New",
+      ip: clientIp,
     };
 
-    inMemoryLeads.unshift(storedLead);
-    if (inMemoryLeads.length > 500) inMemoryLeads.pop();
+    await saveLead(storedLead);
 
     // 8. Canonical Sahyak CRM Lead Payload
     const crmPayload = {
