@@ -12,7 +12,7 @@ import {
   StoredLead,
 } from "@/lib/leads-store";
 
-export const runtime = "nodejs";
+export const runtime = "edge";
 
 const duplicateSubmissionSet = new Set<string>();
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 mins
