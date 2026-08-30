@@ -1,24 +1,43 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fafafa;
+  /* 100% Light & Airy Foundation */
+  --background: #ffffff;
   --foreground: #0f172a;
   --surface: #ffffff;
   --surface-subtle: #f8fafc;
-  --surface-elevated: #ffffff;
+  --surface-blue: #f5f9ff;
+  --surface-lavender: #f8f7ff;
   --border: #e2e8f0;
   --border-subtle: #f1f5f9;
+  --border-blue: #dbeafe;
   --muted: #64748b;
   --muted-foreground: #475569;
-  --brand: #0f172a;
-  --brand-foreground: #ffffff;
-  
-  --font-heading: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-sans: "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Logo-Derived Gradient System: Bright Cyan/Azure -> Periwinkle -> Soft Violet */
+  --brand-cyan: #00a3ff;
+  --brand-azure: #0077ff;
+  --brand-periwinkle: #6366f1;
+  --brand-violet: #7c3aed;
+
+  /* Text Colors */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+
+  /* Status Tokens */
+  --status-active: #0077ff;
+  --status-success: #10b981;
+  --status-warning: #f59e0b;
+  --status-danger: #f43f5e;
+
+  /* Typography */
+  --font-heading: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 @theme {
-  --color-background: #fafafa;
+  --color-background: #ffffff;
   --color-foreground: #0f172a;
   --color-surface: #ffffff;
   --color-surface-subtle: #f8fafc;
@@ -26,8 +45,12 @@
   --color-border-subtle: #f1f5f9;
   --color-muted: #64748b;
   --color-muted-foreground: #475569;
-  --color-brand: #0f172a;
-  --color-brand-foreground: #ffffff;
+  
+  --color-cyan: #00a3ff;
+  --color-azure: #0077ff;
+  --color-periwinkle: #6366f1;
+  --color-violet: #7c3aed;
+
   --font-heading: var(--font-heading);
   --font-sans: var(--font-sans);
 }
@@ -39,11 +62,11 @@
 html {
   scroll-behavior: smooth;
   color-scheme: light;
-  background-color: #fafafa;
+  background-color: #ffffff;
 }
 
 body {
-  background-color: #fafafa;
+  background-color: #ffffff;
   color: #0f172a;
   font-family: var(--font-sans);
   overflow-x: clip;
@@ -54,48 +77,108 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
 }
 
 ::selection {
-  background: #0f172a;
+  background: #0077ff;
   color: #ffffff;
 }
 
-/* Premium SaaS Diffused Shadows */
+/* ─────────────────────────────────────────────────────────────
+   LIGHT, CRISP PRODUCT & EDITORIAL PANELS
+───────────────────────────────────────────────────────────── */
+
 .saas-card {
   background-color: #ffffff;
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 1rem;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid #e2e8f0;
+  border-radius: 0.875rem;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.02);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .saas-card-interactive {
   background-color: #ffffff;
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 1rem;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid #e2e8f0;
+  border-radius: 0.875rem;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .saas-card-interactive:hover {
-  transform: translateY(-3px);
-  border-color: rgba(203, 213, 225, 0.9);
-  box-shadow: 0 20px 35px -10px rgba(15, 23, 42, 0.08), 0 8px 16px -4px rgba(15, 23, 42, 0.03);
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 25px -5px rgba(0, 119, 255, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.03);
 }
 
-/* Subtle Ambient Gradient Backgrounds */
-.saas-ambient-glow {
-  background: radial-gradient(circle at 50% 0%, rgba(241, 245, 249, 0.8) 0%, rgba(250, 250, 250, 0) 70%);
+/* Light High-Precision Technical Panels */
+.saas-panel-light {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px -2px rgba(0, 119, 255, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
 }
 
-.saas-dot-pattern {
-  background-size: 24px 24px;
-  background-image: radial-gradient(circle, rgba(15, 23, 42, 0.05) 1px, transparent 1px);
+/* Soft Atmospheric Gradients for Final CTA & Hero Tint */
+.atmospheric-cta-bg {
+  background: linear-gradient(135deg, #f0f7ff 0%, #f5f3ff 50%, #fdf4ff 100%);
+  border: 1px solid #e0e7ff;
 }
 
-/* Primary Pill Button */
+.atmospheric-blue-bg {
+  background: linear-gradient(180deg, #f5f9ff 0%, #ffffff 100%);
+}
+
+.atmospheric-lavender-bg {
+  background: linear-gradient(180deg, #f8f7ff 0%, #ffffff 100%);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   LOGO-DERIVED BRAND GRADIENT SYSTEM
+───────────────────────────────────────────────────────────── */
+
+/* Exact Logo Gradient: Cyan -> Azure -> Periwinkle -> Violet */
+.brand-gradient-bg {
+  background: linear-gradient(135deg, #0084ff 0%, #6366f1 50%, #7c3aed 100%);
+}
+
+.brand-gradient-text {
+  background: linear-gradient(135deg, #0084ff 0%, #6366f1 50%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-azure {
+  background: linear-gradient(135deg, #0084ff 0%, #6366f1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PRIMARY & SECONDARY PILL BUTTONS
+───────────────────────────────────────────────────────────── */
+
+.btn-pill-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0084ff 0%, #6366f1 50%, #7c3aed 100%);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 9999px;
+  padding: 0.625rem 1.375rem;
+  box-shadow: 0 4px 14px -2px rgba(0, 132, 255, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-pill-brand:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px -2px rgba(124, 58, 237, 0.38);
+}
+
 .btn-pill-primary {
   display: inline-flex;
   align-items: center;
@@ -107,14 +190,15 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 0.875rem;
   border-radius: 9999px;
   padding: 0.625rem 1.375rem;
-  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.15);
+  box-shadow: 0 2px 8px -1px rgba(15, 23, 42, 0.12);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-pill-primary:hover {
-  background-color: #1e293b;
+  background-color: #0077ff;
+  color: #ffffff;
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px -2px rgba(15, 23, 42, 0.2);
+  box-shadow: 0 6px 16px -2px rgba(0, 119, 255, 0.3);
 }
 
 .btn-pill-secondary {
@@ -129,7 +213,7 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 9999px;
   padding: 0.625rem 1.375rem;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.03);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -146,7 +230,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-track {
-  background: #fafafa;
+  background: #ffffff;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -164,6 +248,52 @@ button:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 2px solid #0f172a;
+  outline: 2px solid #0077ff;
   outline-offset: 2px;
+}
+
+/* Velocity Calculator Slider Styles */
+input[type="range"].velocity-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 9999px;
+  outline: none;
+  transition: background 0.2s;
+}
+
+input[type="range"].velocity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #0077ff;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 119, 255, 0.35);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+input[type="range"].velocity-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  background: #7c3aed;
+}
+
+input[type="range"].velocity-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #0077ff;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 119, 255, 0.35);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+input[type="range"].velocity-slider::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  background: #7c3aed;
 }

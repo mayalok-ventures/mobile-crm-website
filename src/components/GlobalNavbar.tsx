@@ -16,6 +16,7 @@ const NAV_LINKS: NavLinkItem[] = [
   { name: "Pricing", href: "/pricing" },
   { name: "Security", href: "/security" },
   { name: "Resources", href: "/resources" },
+  { name: "About", href: "/about" },
   { name: "Contact", href: "/contact" },
 ];
 
@@ -77,7 +78,7 @@ export function GlobalNavbar() {
           </Link>
           <Link
             href="https://crm.sahyak.com/signup/"
-            className="btn-pill-primary text-xs py-2 px-5 font-semibold"
+            className="btn-pill-brand text-white text-xs py-2 px-5 font-semibold shadow-sm"
           >
             <span>Start Free Trial</span>
             <ArrowRight className="w-3.5 h-3.5 ml-1.5" />

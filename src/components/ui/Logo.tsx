@@ -20,41 +20,35 @@ export const Logo: React.FC<LogoProps> = ({
 }) => {
   const sizeMap = {
     sm: { img: 24, container: "w-6 h-6", text: "text-base", badge: "text-[9px] px-1 py-0.2" },
-    md: { img: 34, container: "w-8.5 h-8.5", text: "text-lg sm:text-xl", badge: "text-[10px] px-1.5 py-0.5" },
-    lg: { img: 44, container: "w-11 h-11", text: "text-2xl sm:text-3xl", badge: "text-xs px-2 py-0.5" },
-    xl: { img: 64, container: "w-16 h-16", text: "text-3xl sm:text-4xl", badge: "text-sm px-2.5 py-1" },
+    md: { img: 32, container: "w-8 h-8", text: "text-lg sm:text-xl", badge: "text-[10px] px-1.5 py-0.5" },
+    lg: { img: 40, container: "w-10 h-10", text: "text-2xl sm:text-3xl", badge: "text-xs px-2 py-0.5" },
+    xl: { img: 56, container: "w-14 h-14", text: "text-3xl sm:text-4xl", badge: "text-sm px-2.5 py-1" },
   };
 
   const selectedSize = sizeMap[size];
 
   const logoContent = (
     <div className={cn("inline-flex items-center gap-2.5 group select-none", className)}>
-      {/* Logo Icon with subtle glowing backing */}
-      <div className={cn("relative flex items-center justify-center shrink-0", selectedSize.container)}>
-        {/* Ambient Halo behind logo */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-[#00A3FF]/40 to-[#9353FF]/40 rounded-xl blur-md opacity-70 group-hover:opacity-100 transition-opacity" />
-
-        {/* Logo Image */}
-        <div className="relative w-full h-full rounded-xl overflow-hidden bg-slate-950/80 p-0.5 border border-white/15 group-hover:border-cyan-400/50 transition-all shadow-[0_0_15px_rgba(0,163,255,0.3)]">
-          <Image
-            src="/android-chrome-192x192.png"
-            alt="CoreSetu OS Logo"
-            width={selectedSize.img}
-            height={selectedSize.img}
-            className="w-full h-full object-contain"
-            priority
-          />
-        </div>
+      {/* Crisp Logo Container */}
+      <div className={cn("relative flex items-center justify-center shrink-0 rounded-xl overflow-hidden bg-white border border-slate-200 shadow-sm", selectedSize.container)}>
+        <Image
+          src="/android-chrome-192x192.png"
+          alt="Sahyak CRM Logo"
+          width={selectedSize.img}
+          height={selectedSize.img}
+          className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+          priority
+        />
       </div>
 
       {/* Brand Typography */}
       {showText && (
         <div className="flex items-center gap-1.5">
-          <span className={cn("font-black tracking-wider text-white group-hover:text-cyan-200 transition-colors", selectedSize.text)}>
-            CORESETU
+          <span className="font-heading font-extrabold tracking-tight text-slate-900 group-hover:text-[#0077ff] transition-colors">
+            Sahyak<span className="text-slate-400 font-normal text-xs ml-0.5">crm</span>
           </span>
-          <span className={cn("font-mono font-bold rounded bg-gradient-to-r from-cyan-950 to-purple-950 text-cyan-300 border border-cyan-500/40 shadow-sm", selectedSize.badge)}>
-            OS
+          <span className="text-[10px] font-medium font-mono text-[#0077ff] bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 rounded-full">
+            Mobile-First
           </span>
         </div>
       )}
@@ -63,7 +57,7 @@ export const Logo: React.FC<LogoProps> = ({
 
   if (asLink) {
     return (
-      <Link href={href} className="inline-block focus-visible:outline-none" aria-label="CoreSetu OS Home">
+      <Link href={href} className="inline-block focus-visible:outline-none" aria-label="Sahyak CRM Home">
         {logoContent}
       </Link>
     );

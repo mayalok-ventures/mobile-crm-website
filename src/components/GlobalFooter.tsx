@@ -107,6 +107,11 @@ export function GlobalFooter() {
                 </Link>
               </li>
               <li>
+                <Link href="/about" className="text-slate-500 hover:text-slate-900 transition-colors">
+                  About Our Mission
+                </Link>
+              </li>
+              <li>
                 <Link href="/contact" className="text-slate-500 hover:text-slate-900 transition-colors">
                   Contact Architecture Team
                 </Link>

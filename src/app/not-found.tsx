@@ -1,38 +1,56 @@
 import React from "react";
 import Link from "next/link";
-import { GlowingButton } from "@/components/buttons/GlowingButton";
-import { Logo } from "@/components/ui/Logo";
-import { Sparkles, Home, ArrowLeft } from "lucide-react";
+import Image from "next/image";
+import { ArrowLeft, ArrowRight, Home, Sparkles } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <main className="min-h-screen bg-[#0B0F19] text-slate-100 flex flex-col items-center justify-center px-4 tech-grid-bg text-center py-32">
+    <main className="min-h-screen bg-white text-slate-900 flex flex-col items-center justify-center px-4 text-center py-32 selection:bg-slate-900 selection:text-white">
       <div className="max-w-md space-y-6">
         <div className="flex justify-center mb-2">
-          <Logo size="lg" showText={true} />
-        </div>
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-cyan-500/30 text-xs font-mono text-cyan-300">
-          <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-          <span>ERROR 404</span>
+          <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-sm border border-slate-200 bg-white flex items-center justify-center">
+            <Image
+              src="/android-chrome-192x192.png"
+              alt="Sahyak CRM"
+              width={48}
+              height={48}
+              className="w-full h-full object-contain"
+            />
+          </div>
         </div>
 
-        <h1 className="text-5xl sm:text-6xl font-extrabold text-white font-mono">
-          <span className="text-gradient-cyan">404</span>
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-mono text-slate-700">
+          <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+          <span>ERROR 404 • ROUTE NOT FOUND</span>
+        </div>
+
+        <h1 className="text-6xl sm:text-7xl font-extrabold text-slate-950 font-heading tracking-tight">
+          404
         </h1>
 
-        <h2 className="text-2xl font-bold text-white">Page Not Found</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 font-heading">
+          Page Not Found
+        </h2>
 
-        <p className="text-sm text-slate-400 leading-relaxed">
-          The requested page route could not be found or may have been moved. Return to the CoreSetu OS homepage or check out our features.
+        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+          The requested page could not be located or may have been moved. Return to the Sahyak CRM homepage or explore our speed-to-lead capabilities.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
-          <GlowingButton href="/" size="md" variant="primary">
-            Return to Homepage
-          </GlowingButton>
-          <GlowingButton href="/features" size="md" variant="secondary">
-            Explore Features
-          </GlowingButton>
+          <Link
+            href="/"
+            className="btn-pill-primary text-xs py-3 px-6 font-bold w-full sm:w-auto flex items-center justify-center gap-2"
+          >
+            <Home className="w-3.5 h-3.5" />
+            <span>Return to Homepage</span>
+          </Link>
+          <Link
+            href="/features"
+            className="btn-pill-secondary text-xs py-3 px-6 font-semibold w-full sm:w-auto flex items-center justify-center gap-2"
+          >
+            <span>Explore Features</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
       </div>
     </main>
