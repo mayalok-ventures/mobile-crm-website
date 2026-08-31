@@ -330,10 +330,10 @@ export default function PricingPage() {
 
           <div className="rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs sm:text-sm">
+              <table className="w-full text-left border-collapse text-xs sm:text-sm min-w-[580px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase font-mono">
+                    <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase font-mono sticky-table-col bg-slate-50 border-r border-slate-200 sm:border-r-0">
                       Feature / SLA
                     </th>
                     <th className="py-4 px-6 font-bold text-slate-900">Solo Closer</th>
@@ -345,13 +345,13 @@ export default function PricingPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
                   <tr>
-                    <td className="py-4 px-6 font-medium">Sub-2s Webhook Ingestion</td>
+                    <td className="py-4 px-6 font-medium sticky-table-col bg-white border-r border-slate-200 sm:border-r-0">Sub-2s Webhook Ingestion</td>
                     <td className="py-4 px-6"><Check className="w-4 h-4 text-[#0084ff] font-bold" /></td>
                     <td className="py-4 px-6 bg-blue-50/40 border-x border-blue-200"><Check className="w-4 h-4 text-[#0084ff] font-bold" /></td>
                     <td className="py-4 px-6"><Check className="w-4 h-4 text-[#0084ff] font-bold" /></td>
                   </tr>
                   <tr>
-                    <td className="py-4 px-6 font-medium">1-Tap WhatsApp Proposals</td>
+                    <td className="py-4 px-6 font-medium sticky-table-col bg-white border-r border-slate-200 sm:border-r-0">1-Tap WhatsApp Proposals</td>
                     <td className="py-4 px-6"><Check className="w-4 h-4 text-[#0084ff] font-bold" /></td>
                     <td className="py-4 px-6 bg-blue-50/40 border-x border-blue-200"><Check className="w-4 h-4 text-[#0084ff] font-bold" /></td>
                     <td className="py-4 px-6"><Check className="w-4 h-4 text-[#0084ff] font-bold" /></td>

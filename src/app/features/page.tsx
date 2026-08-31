@@ -235,7 +235,7 @@ export default function FeaturesPage() {
               <div className="w-full max-w-[340px] rounded-3xl bg-white p-4 border-2 border-slate-200 shadow-xl space-y-4">
                 <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono pb-2 border-b border-slate-100">
                   <span>Sahyak Mobile Closer</span>
-                  <span>v3.4.1 Active</span>
+                  <span>Native Mobile App</span>
                 </div>
 
                 <div className="p-3 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-2">
@@ -342,27 +342,27 @@ export default function FeaturesPage() {
             {/* Right Telemetry Stat Grid (Light Clean Cards) */}
             <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2 shadow-sm">
-                <div className="text-xs font-mono text-slate-500 uppercase">Avg Response SLA</div>
-                <div className="text-3xl font-extrabold text-[#0084ff] font-heading">1m 14s</div>
-                <div className="text-xs text-slate-600">98.2% contacted in &lt; 90 seconds.</div>
+                <div className="text-xs font-mono text-slate-500 uppercase">Speed-to-Lead Benchmark</div>
+                <div className="text-3xl font-extrabold text-[#0084ff] font-heading">&lt; 90s</div>
+                <div className="text-xs text-slate-600">Sub-90-second SLA target on every inbound lead.</div>
               </div>
 
               <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2 shadow-sm">
-                <div className="text-xs font-mono text-slate-500 uppercase">Deal Catch Rate</div>
-                <div className="text-3xl font-extrabold text-emerald-600 font-heading">99.8%</div>
-                <div className="text-xs text-slate-600">Zero ad leads lost to inbox delay.</div>
+                <div className="text-xs font-mono text-slate-500 uppercase">Inbound Protection</div>
+                <div className="text-3xl font-extrabold text-emerald-600 font-heading">Zero Loss</div>
+                <div className="text-xs text-slate-600">No ad leads lost in CSVs or delayed inboxes.</div>
               </div>
 
               <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2 shadow-sm">
-                <div className="text-xs font-mono text-slate-500 uppercase">Pipeline Surge</div>
-                <div className="text-3xl font-extrabold text-indigo-600 font-heading">+38%</div>
-                <div className="text-xs text-slate-600">Higher close rate from sub-2s speed.</div>
+                <div className="text-xs font-mono text-slate-500 uppercase">Field Velocity</div>
+                <div className="text-3xl font-extrabold text-indigo-600 font-heading">1-Tap</div>
+                <div className="text-xs text-slate-600">Instant proposal dispatch without phonebook saves.</div>
               </div>
 
               <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2 shadow-sm">
                 <div className="text-xs font-mono text-slate-500 uppercase">Edge Availability</div>
                 <div className="text-3xl font-extrabold text-slate-900 font-heading">99.99%</div>
-                <div className="text-xs text-slate-600">Global Cloudflare edge uptime.</div>
+                <div className="text-xs text-slate-600">Global Cloudflare edge infrastructure uptime.</div>
               </div>
             </div>
           </div>

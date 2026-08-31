@@ -4,19 +4,18 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertTriangle,
-  CheckCircle2,
   Clock,
-  FileSpreadsheet,
-  MessageSquare,
   PhoneOff,
-  Sparkles,
+  ShieldAlert,
   Zap,
-  ArrowRight,
+  Smartphone,
+  ShieldCheck,
   TrendingDown,
   TrendingUp,
-  ShieldAlert,
-  ShieldCheck,
-  Smartphone,
+  FileSpreadsheet,
+  CheckCircle2,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 
 export const ChaosToControl: React.FC = () => {
@@ -24,220 +23,232 @@ export const ChaosToControl: React.FC = () => {
 
   return (
     <div className="w-full">
-      {/* Interactive Toggle Switch Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
-        <div className="space-y-1 text-center sm:text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-xs font-mono text-[#0084ff] font-semibold">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>THE ARCHITECTURAL TRANSFORMATION</span>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
+        {/* Left Side: Editorial Story */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="space-y-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 px-3 py-1 bg-white rounded-full border border-slate-200 font-heading inline-block">
+              The Operational Problem
+            </span>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 font-heading leading-tight">
+              High-ticket leads die in the hand-off.
+            </h2>
+            <p className="text-slate-600 text-base sm:text-lg leading-relaxed">
+              When an ad lead comes in, every minute of delay increases the likelihood of a lost sale. Manual CSV downloads, unassigned WhatsApp chats, and disconnected spreadsheets create silent revenue leakage.
+            </p>
           </div>
-          <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading">
-            Toggle the Reality of Sales Operations
-          </h3>
+
+          <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-3">
+            <div className="text-xs font-bold text-slate-900 font-heading">
+              Why Traditional Sales Workflows Fail:
+            </div>
+            <div className="space-y-2 text-xs text-slate-600">
+              <div className="flex items-start gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0" />
+                <span>Ad leads sit untouched in portal CSVs for hours before manual distribution.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0" />
+                <span>Reps lack pre-filled WhatsApp proposals, leading to inconsistent communication.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0" />
+                <span>Managers have zero live telemetry on call response times or deal progression.</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Interactive Mode Slider Switch */}
-        <div className="inline-flex p-1.5 bg-slate-100 rounded-2xl border border-slate-200 relative">
-          <button
-            onClick={() => setViewState("chaos")}
-            className={`relative z-10 flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              viewState === "chaos"
-                ? "text-rose-900 bg-white shadow-md border border-rose-200"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
-            <span>The Spreadsheet Chaos</span>
-          </button>
-
-          <button
-            onClick={() => setViewState("control")}
-            className={`relative z-10 flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              viewState === "control"
-                ? "text-[#0084ff] bg-white shadow-md border border-blue-200"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <Zap className="w-3.5 h-3.5 text-[#0084ff]" />
-            <span>The Sahyak Control Engine</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Dynamic Animated Transformation Stage */}
-      <div className="relative rounded-2xl overflow-hidden shadow-lg transition-all duration-300">
-        <AnimatePresence mode="wait">
-          {viewState === "chaos" ? (
-            /* ─── CHAOS STATE: SPREADSHEET & SCATTERED LOSS (LIGHT ROSE) ─── */
-            <motion.div
-              key="state-chaos"
-              initial={{ opacity: 0, scale: 0.99 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.99 }}
-              transition={{ duration: 0.25 }}
-              className="p-6 sm:p-10 bg-gradient-to-br from-rose-50/90 via-slate-50 to-amber-50/50 border-2 border-rose-200/80 text-slate-900 space-y-8"
+        {/* Right Side: Interactive Reality Switcher */}
+        <div className="lg:col-span-7 space-y-6">
+          {/* Toggle Control */}
+          <div className="flex items-center justify-between gap-4 p-1.5 bg-slate-100 rounded-2xl border border-slate-200">
+            <button
+              onClick={() => setViewState("chaos")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                viewState === "chaos"
+                  ? "bg-white text-rose-900 shadow-sm border border-rose-200 font-bold"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
             >
-              {/* Header Badge */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-rose-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center font-bold">
-                    <TrendingDown className="w-5 h-5" />
+              <FileSpreadsheet className="w-4 h-4 text-rose-500" />
+              <span>Spreadsheet &amp; Manual Chaos</span>
+            </button>
+
+            <button
+              onClick={() => setViewState("control")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                viewState === "control"
+                  ? "bg-white text-[#0084ff] shadow-sm border border-blue-200 font-bold"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Zap className="w-4 h-4 text-[#0084ff]" />
+              <span>Sahyak Automated Pipeline</span>
+            </button>
+          </div>
+
+          {/* Transformation Content Cards */}
+          <AnimatePresence mode="wait">
+            {viewState === "chaos" ? (
+              <motion.div
+                key="view-chaos"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="p-6 sm:p-8 bg-gradient-to-br from-rose-50/80 via-white to-amber-50/40 rounded-2xl border-2 border-rose-200 text-slate-900 space-y-6 shadow-sm"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-rose-200/80">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center font-bold">
+                      <TrendingDown className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-extrabold text-slate-900 font-heading">
+                        Manual Spreadsheets &amp; Unassigned Inquiries
+                      </h3>
+                      <p className="text-xs text-rose-700 font-medium">
+                        Typical Speed-to-Lead: <strong>45 mins – 4 hours</strong>
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-lg sm:text-xl font-extrabold text-slate-900 font-heading">
-                      Manual Spreadsheets, Missed Calls &amp; Stalled WhatsApps
+                  <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-300">
+                    STATUS: LEAKING
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                  <div className="p-4 rounded-xl bg-white border border-rose-200 shadow-2xs space-y-2">
+                    <div className="flex items-center gap-2 text-rose-600 text-xs font-bold font-mono">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>DELAYED INGEST</span>
+                    </div>
+                    <h4 className="font-bold text-slate-900 text-xs font-heading">
+                      Ad Leads Wait in CSVs
                     </h4>
-                    <p className="text-xs text-rose-700 font-medium">
-                      Average Speed-to-Lead: <strong>45 mins - 4 hours</strong> • Lead Drop-off: <strong>38%</strong>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Portals require manual downloads before reps get notified, letting buyer intent cool off.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-white border border-rose-200 shadow-2xs space-y-2">
+                    <div className="flex items-center gap-2 text-amber-700 text-xs font-bold font-mono">
+                      <PhoneOff className="w-3.5 h-3.5" />
+                      <span>NO ACCOUNTABILITY</span>
+                    </div>
+                    <h4 className="font-bold text-slate-900 text-xs font-heading">
+                      Zero SLA Tracking
+                    </h4>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Managers have no visibility into whether reps called in 5 minutes or 5 days.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-white border border-rose-200 shadow-2xs space-y-2">
+                    <div className="flex items-center gap-2 text-rose-700 text-xs font-bold font-mono">
+                      <ShieldAlert className="w-3.5 h-3.5" />
+                      <span>DATA THEFT RISK</span>
+                    </div>
+                    <h4 className="font-bold text-slate-900 text-xs font-heading">
+                      Unprotected Customer Lists
+                    </h4>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Spreadsheets get copied and downloaded to personal laptops with zero audit trails.
                     </p>
                   </div>
                 </div>
 
-                <span className="px-3.5 py-1 rounded-full bg-rose-100 text-rose-800 font-mono text-xs font-bold border border-rose-300">
-                  REVENUE LEAKAGE: HIGH
-                </span>
-              </div>
-
-              {/* 3 Real-world Friction Points */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div className="p-5 rounded-xl bg-white border border-rose-200/90 space-y-3 shadow-sm">
-                  <div className="flex items-center gap-2 text-rose-600 text-xs font-bold font-mono">
-                    <Clock className="w-4 h-4" />
-                    <span>DELAYED SPEED-TO-LEAD</span>
+                <div className="p-3.5 rounded-xl bg-rose-100/70 border border-rose-200 flex items-center justify-between text-xs text-rose-950">
+                  <span>Ad spend is wasted when lead response takes hours.</span>
+                  <button
+                    onClick={() => setViewState("control")}
+                    className="font-bold text-rose-900 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>See Sahyak Solution</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="view-control"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="p-6 sm:p-8 bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/40 rounded-2xl border-2 border-blue-200 text-slate-900 space-y-6 shadow-sm"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-blue-200/80">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-100 text-[#0084ff] flex items-center justify-center font-bold">
+                      <TrendingUp className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-extrabold text-slate-900 font-heading">
+                        Sub-2s Webhook Routing &amp; 1-Tap Mobile Dispatch
+                      </h3>
+                      <p className="text-xs text-[#0084ff] font-medium">
+                        Typical Speed-to-Lead: <strong>&lt; 90 seconds</strong>
+                      </p>
+                    </div>
                   </div>
-                  <h5 className="font-bold text-slate-900 text-sm font-heading">
-                    Ad Leads Sit in CSVs for Hours
-                  </h5>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Meta ad submissions wait for a manager to download CSVs, manually reformat, and email to reps. High-intent buyers grow cold.
-                  </p>
+                  <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-blue-100 text-[#0084ff] border border-blue-300">
+                    STATUS: OPTIMIZED
+                  </span>
                 </div>
 
-                <div className="p-5 rounded-xl bg-white border border-rose-200/90 space-y-3 shadow-sm">
-                  <div className="flex items-center gap-2 text-amber-600 text-xs font-bold font-mono">
-                    <PhoneOff className="w-4 h-4" />
-                    <span>NO REP ACCOUNTABILITY</span>
-                  </div>
-                  <h5 className="font-bold text-slate-900 text-sm font-heading">
-                    Zero SLA or Follow-Up Visibility
-                  </h5>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Managers have no way to know if reps called within 5 mins or 5 days. Deals die in silent WhatsApp chats without telemetry.
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-xl bg-white border-2 border-dashed border-rose-300 space-y-3 shadow-sm">
-                  <div className="flex items-center gap-2 text-rose-700 text-xs font-bold font-mono">
-                    <ShieldAlert className="w-4 h-4" />
-                    <span>CLIENT DATA LEAKAGE</span>
-                  </div>
-                  <h5 className="font-bold text-slate-900 text-sm font-heading">
-                    Reps Walk Away with Contact Lists
-                  </h5>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Spreadsheet links get shared, downloaded to personal laptops, and stolen by departing sales agents with zero audit trail.
-                  </p>
-                </div>
-              </div>
-
-              {/* Callout Summary */}
-              <div className="p-4 rounded-xl bg-rose-100/80 border border-rose-300/80 flex items-center justify-between gap-4 text-xs text-rose-950">
-                <span className="font-medium">
-                  Result: <strong>38% of your monthly marketing ad spend</strong> is lost before reps even say hello.
-                </span>
-                <button
-                  onClick={() => setViewState("control")}
-                  className="px-3.5 py-1.5 rounded-lg bg-rose-900 text-white font-bold text-xs hover:bg-rose-800 transition-colors shrink-0 cursor-pointer"
-                >
-                  See Sahyak Fix &rarr;
-                </button>
-              </div>
-            </motion.div>
-          ) : (
-            /* ─── CONTROL STATE: SAHYAK AUTOMATED COCKPIT (100% LIGHT & AIRY) ─── */
-            <motion.div
-              key="state-control"
-              initial={{ opacity: 0, scale: 0.99 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.99 }}
-              transition={{ duration: 0.25 }}
-              className="p-6 sm:p-10 bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/50 border-2 border-blue-200/80 text-slate-900 space-y-8"
-            >
-              {/* Header Badge */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-blue-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-100 text-[#0084ff] flex items-center justify-center font-bold">
-                    <TrendingUp className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg sm:text-xl font-extrabold text-slate-900 font-heading">
-                      Sub-2s Webhooks, 1-Tap WhatsApp &amp; Manager Telemetry
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                  <div className="p-4 rounded-xl bg-white border border-blue-200 shadow-2xs space-y-2">
+                    <div className="flex items-center gap-2 text-[#0084ff] text-xs font-bold font-mono">
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>INSTANT INGESTION</span>
+                    </div>
+                    <h4 className="font-bold text-slate-900 text-xs font-heading">
+                      Automatic Webhook Capture
                     </h4>
-                    <p className="text-xs text-[#0084ff] font-medium">
-                      Average Speed-to-Lead: <strong>&lt; 90 seconds</strong> • Deal Catch Rate: <strong>99.8%</strong>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Meta &amp; Google ad leads are instantly deduplicated and assigned to available closers.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-white border border-blue-200 shadow-2xs space-y-2">
+                    <div className="flex items-center gap-2 text-[#6366f1] text-xs font-bold font-mono">
+                      <Smartphone className="w-3.5 h-3.5" />
+                      <span>1-TAP OUTREACH</span>
+                    </div>
+                    <h4 className="font-bold text-slate-900 text-xs font-heading">
+                      Verified WhatsApp Proposals
+                    </h4>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Closers send official PDF brochures and pricing in a single tap without saving numbers.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-white border border-blue-200 shadow-2xs space-y-2">
+                    <div className="flex items-center gap-2 text-[#7c3aed] text-xs font-bold font-mono">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>DATA PROTECTION</span>
+                    </div>
+                    <h4 className="font-bold text-slate-900 text-xs font-heading">
+                      Role-Based Access (RBAC)
+                    </h4>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Contact numbers are masked, exports locked, and actions tracked with immutable logs.
                     </p>
                   </div>
                 </div>
 
-                <span className="px-3.5 py-1 rounded-full bg-blue-100 text-[#0084ff] font-mono text-xs font-bold border border-blue-300">
-                  PIPELINE RECOVERY: +38% SURGE
-                </span>
-              </div>
-
-              {/* 3 Controlled Execution Pillars */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div className="p-5 rounded-xl bg-white border border-blue-200/80 space-y-3 shadow-sm">
-                  <div className="flex items-center gap-2 text-[#0084ff] text-xs font-bold font-mono">
-                    <Zap className="w-4 h-4" />
-                    <span>SUB-2S WEBHOOK INGEST</span>
-                  </div>
-                  <h5 className="font-bold text-slate-900 text-sm font-heading">
-                    Instant Round-Robin Routing
-                  </h5>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Meta &amp; Google ad leads are instantly deduplicated and routed directly to the active field closer&apos;s phone in under 2 seconds.
-                  </p>
+                <div className="p-3.5 rounded-xl bg-blue-100/70 border border-blue-200 flex items-center justify-between text-xs text-slate-800">
+                  <span>Zero lead leakage with verified response monitoring.</span>
+                  <span className="font-mono text-xs font-bold text-[#0084ff]">
+                    Deploy in 60s
+                  </span>
                 </div>
-
-                <div className="p-5 rounded-xl bg-white border border-blue-200/80 space-y-3 shadow-sm">
-                  <div className="flex items-center gap-2 text-[#6366f1] text-xs font-bold font-mono">
-                    <Smartphone className="w-4 h-4" />
-                    <span>1-TAP WHATSAPP DISPATCH</span>
-                  </div>
-                  <h5 className="font-bold text-slate-900 text-sm font-heading">
-                    Pre-Filled Verified Proposals
-                  </h5>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Closer taps once on mobile to send official PDF brochures and customized pricing without saving numbers or typing templates.
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-xl bg-white border border-blue-200/80 space-y-3 shadow-sm">
-                  <div className="flex items-center gap-2 text-[#7c3aed] text-xs font-bold font-mono">
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>CRYPTOGRAPHIC ISOLATION</span>
-                  </div>
-                  <h5 className="font-bold text-slate-900 text-sm font-heading">
-                    Zero-Theft Role Access (RBAC)
-                  </h5>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Customer phone numbers are masked, exports locked, and immutable audit logs record every deal action with zero data leakage.
-                  </p>
-                </div>
-              </div>
-
-              {/* Callout Summary */}
-              <div className="p-4 rounded-xl bg-blue-100/70 border border-blue-300/80 flex items-center justify-between gap-4 text-xs text-slate-800">
-                <span className="font-medium">
-                  Result: <strong>Zero lead leakage</strong>, &lt; 90s speed-to-lead, and a 38% increase in qualified pipeline conversion.
-                </span>
-                <span className="text-xs font-mono font-bold text-[#0084ff] shrink-0">
-                  Ready to deploy in 60s
-                </span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );

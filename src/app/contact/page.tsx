@@ -172,7 +172,7 @@ export default function ContactPage() {
                   </div>
                   <div className="space-y-1">
                     <div className="font-bold text-slate-900 text-sm font-heading">Direct Email</div>
-                    <div className="text-xs text-slate-500 font-mono">support@coresetu.com</div>
+                    <div className="text-xs text-slate-500 font-mono">support@sahyak.com</div>
                     <div className="text-[11px] text-slate-400">Guaranteed response within 4 hours</div>
                   </div>
                 </div>
@@ -182,8 +182,8 @@ export default function ContactPage() {
                     <Building2 className="w-5 h-5" />
                   </div>
                   <div className="space-y-1">
-                    <div className="font-bold text-slate-900 text-sm font-heading">CoreSetu Headquarters</div>
-                    <div className="text-xs text-slate-500">Cyber City, Gurugram, Haryana, India</div>
+                    <div className="font-bold text-slate-900 text-sm font-heading">Sahyak CRM Headquarters</div>
+                    <div className="text-xs text-slate-500">Sector 62, Noida, Delhi NCR, India</div>
                   </div>
                 </div>
               </div>

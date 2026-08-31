@@ -11,6 +11,8 @@ import {
   Zap,
   Clock,
   ShieldCheck,
+  CheckCircle2,
+  Info,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -40,28 +42,31 @@ export const VelocityCalculator: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-mono text-[#0084ff] font-bold">
+          <div className="flex items-center gap-2 text-xs font-mono text-[#0077ff] font-bold">
             <Sparkles className="w-4 h-4" />
-            <span>REAL-TIME ROI TELEMETRY MODEL</span>
+            <span>ROI ESTIMATION MODEL</span>
           </div>
           <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading">
-            Calculate Your Pipeline Recovery
+            Quantify Your Sales Velocity Surge
           </h3>
+          <p className="text-xs sm:text-sm text-slate-500">
+            Estimate potential pipeline recovery based on team size, monthly lead volume, and average deal size.
+          </p>
         </div>
 
         <span className="px-3 py-1 rounded-full bg-blue-50 text-[#0084ff] font-mono text-xs font-bold border border-blue-200 self-start sm:self-auto">
-          DYNAMIC REVENUE MODEL
+          DYNAMIC FORECAST
         </span>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Side: 3 Interactive Sliders */}
         <div className="lg:col-span-6 space-y-6">
           {/* Slider 1: Sales Closers */}
           <div className="space-y-2">
             <div className="flex justify-between items-center text-xs font-bold">
               <span className="text-slate-700 flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-[#0084ff]" />
+                <Users className="w-3.5 h-3.5 text-[#0077ff]" />
                 <span>Sales Closers &amp; Field Reps</span>
               </span>
               <span className="font-mono text-sm text-[#0084ff] font-extrabold">
@@ -76,6 +81,7 @@ export const VelocityCalculator: React.FC = () => {
               value={teamSize}
               onChange={(e) => setTeamSize(Number(e.target.value))}
               className="velocity-slider"
+              aria-label="Sales Closers count"
             />
             <div className="flex justify-between text-[10px] text-slate-400 font-mono">
               <span>1 Rep</span>
@@ -88,8 +94,8 @@ export const VelocityCalculator: React.FC = () => {
           <div className="space-y-2">
             <div className="flex justify-between items-center text-xs font-bold">
               <span className="text-slate-700 flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-[#0084ff]" />
-                <span>Monthly Inbound Leads (Ads + Webhooks)</span>
+                <Zap className="w-3.5 h-3.5 text-[#0077ff]" />
+                <span>Monthly Inbound Leads (Ads &amp; Portals)</span>
               </span>
               <span className="font-mono text-sm text-[#0084ff] font-extrabold">
                 {monthlyLeads.toLocaleString()} Leads / mo
@@ -103,6 +109,7 @@ export const VelocityCalculator: React.FC = () => {
               value={monthlyLeads}
               onChange={(e) => setMonthlyLeads(Number(e.target.value))}
               className="velocity-slider"
+              aria-label="Monthly Inbound Leads"
             />
             <div className="flex justify-between text-[10px] text-slate-400 font-mono">
               <span>50</span>
@@ -115,8 +122,8 @@ export const VelocityCalculator: React.FC = () => {
           <div className="space-y-2">
             <div className="flex justify-between items-center text-xs font-bold">
               <span className="text-slate-700 flex items-center gap-1.5">
-                <DollarSign className="w-3.5 h-3.5 text-[#0084ff]" />
-                <span>Average Deal / ACV Value</span>
+                <DollarSign className="w-3.5 h-3.5 text-[#0077ff]" />
+                <span>Average Deal Value (ACV / Ticket Size)</span>
               </span>
               <span className="font-mono text-sm text-[#0084ff] font-extrabold">
                 {formatCurrency(avgDealValue)}
@@ -130,6 +137,7 @@ export const VelocityCalculator: React.FC = () => {
               value={avgDealValue}
               onChange={(e) => setAvgDealValue(Number(e.target.value))}
               className="velocity-slider"
+              aria-label="Average Deal Value"
             />
             <div className="flex justify-between text-[10px] text-slate-400 font-mono">
               <span>₹10,000</span>
@@ -137,31 +145,39 @@ export const VelocityCalculator: React.FC = () => {
               <span>₹10 Lakhs+</span>
             </div>
           </div>
+
+          {/* Assumptions Box */}
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs flex items-start gap-2.5">
+            <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+            <div className="text-[11px] leading-relaxed">
+              <strong>Calculation Basis:</strong> Models an estimated 18% pipeline catch improvement from sub-90s response latency and ~14 administrative hours saved per rep each month via 1-tap WhatsApp proposals.
+            </div>
+          </div>
         </div>
 
-        {/* Right Side: ROI Revenue Forecast (Light Clean Surface) */}
+        {/* Right Side: ROI Revenue Forecast */}
         <div className="lg:col-span-6 p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-blue-50/80 to-indigo-50/50 border border-blue-200 text-slate-900 space-y-6">
           <div className="space-y-1">
             <div className="text-xs font-mono text-[#0084ff] font-bold">
-              PROJECTED MONTHLY SURGE
+              PROJECTED MONTHLY RECOVERY
             </div>
             <div className="text-3xl sm:text-4xl font-extrabold text-[#0084ff] font-heading">
               {formatCurrency(monthlyRevenueSurge)}
             </div>
             <div className="text-xs text-slate-600">
-              Additional closed pipeline from sub-90s speed-to-lead &amp; zero drop-off.
+              Estimated closed revenue from eliminating lead response delays and manual hand-off friction.
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3 pt-2 border-t border-blue-200/80 text-xs">
-            <div className="p-3 rounded-xl bg-white border border-blue-100 space-y-1">
+            <div className="p-3.5 rounded-xl bg-white border border-blue-100 space-y-1">
               <div className="text-slate-500 text-[10px] font-mono font-bold">Recovered Leads</div>
               <div className="text-lg font-bold text-slate-900 font-mono">
                 +{baselineLeadsRecovered} deals / mo
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-white border border-blue-100 space-y-1">
+            <div className="p-3.5 rounded-xl bg-white border border-blue-100 space-y-1">
               <div className="text-slate-500 text-[10px] font-mono font-bold">Rep Admin Time Saved</div>
               <div className="text-lg font-bold text-slate-900 font-mono">
                 {totalHoursSaved} hrs / mo
@@ -173,7 +189,7 @@ export const VelocityCalculator: React.FC = () => {
             href="https://crm.sahyak.com/signup/"
             className="btn-pill-brand text-white w-full text-center text-xs py-3.5 font-bold shadow-md flex items-center justify-center gap-2"
           >
-            <span>Unlock This Revenue (14-Day Free Trial)</span>
+            <span>Start 14-Day Free Trial</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

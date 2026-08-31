@@ -31,9 +31,10 @@
   --status-warning: #f59e0b;
   --status-danger: #f43f5e;
 
-  /* Typography */
-  --font-heading: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Typography Tokens */
+  --font-heading: var(--font-heading), "Outfit", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: var(--font-sans), "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: var(--font-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
 @theme {
@@ -53,6 +54,7 @@
 
   --font-heading: var(--font-heading);
   --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
 
 * {
@@ -77,7 +79,51 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
-  letter-spacing: -0.035em;
+  letter-spacing: -0.025em;
+}
+
+.tabular-nums,
+.font-numeric {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.sticky-table-col {
+  position: sticky;
+  left: 0;
+  background-color: inherit;
+  z-index: 10;
+}
+
+.touch-target-44 {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Ambient Product Stage Lighting */
+.stage-ambient-glow {
+  background: radial-gradient(circle at 50% 50%, rgba(0, 119, 255, 0.12) 0%, rgba(124, 58, 237, 0.05) 50%, transparent 80%);
+}
+
+/* Lead Thread Connector Animation */
+.lead-thread-animated {
+  stroke-dasharray: 6 6;
+  animation: leadThreadFlow 24s linear infinite;
+}
+
+@keyframes leadThreadFlow {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -120;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lead-thread-animated {
+    animation: none !important;
+  }
 }
 
 ::selection {
@@ -242,6 +288,41 @@ h1, h2, h3, h4, h5, h6 {
   background: #94a3b8;
 }
 
+/* Subtle Technical & Telemetry Background Patterns */
+.bg-grid-subtle {
+  background-size: 24px 24px;
+  background-image: 
+    linear-gradient(to right, rgba(226, 232, 240, 0.5) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(226, 232, 240, 0.5) 1px, transparent 1px);
+}
+
+.bg-dots-subtle {
+  background-size: 20px 20px;
+  background-image: radial-gradient(rgba(148, 163, 184, 0.35) 1px, transparent 1px);
+}
+
+/* Accessible Outline Icon Container */
+.icon-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  color: #0077ff;
+  transition: all 0.2s ease;
+}
+
+.icon-box-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  border: 1px solid #bfdbfe;
+  background-color: #eff6ff;
+  color: #0077ff;
+}
+
 /* High Contrast Focus States */
 a:focus-visible,
 button:focus-visible,
@@ -250,6 +331,18 @@ textarea:focus-visible,
 select:focus-visible {
   outline: 2px solid #0077ff;
   outline-offset: 2px;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Velocity Calculator Slider Styles */
@@ -297,3 +390,4 @@ input[type="range"].velocity-slider::-moz-range-thumb:hover {
   transform: scale(1.15);
   background: #7c3aed;
 }
+

@@ -79,7 +79,7 @@ export default function AboutPage() {
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 shadow-xs text-xs font-semibold text-slate-700"
           >
             <span className="w-2 h-2 rounded-full bg-[#0077ff] animate-pulse" />
-            <span>THE SAHYAK &amp; CORESETU MISSION</span>
+            <span>THE SAHYAK CRM MISSION</span>
           </motion.div>
 
           <motion.h1

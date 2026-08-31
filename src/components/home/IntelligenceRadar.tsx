@@ -14,6 +14,8 @@ import {
   Sparkles,
   ArrowRight,
   Radar,
+  Send,
+  Calendar,
 } from "lucide-react";
 
 interface RadarSignal {
@@ -36,12 +38,12 @@ const RADAR_SIGNALS: RadarSignal[] = [
     title: "High-Ticket Inbound Signal",
     type: "hot",
     icon: Flame,
-    badge: "🔥 HOT LEAD DETECTED",
+    badge: "HIGH-INTENT INBOUND",
     badgeStyle: "bg-rose-50 text-rose-700 border-rose-200",
     leadName: "Vikram Malhotra (Apex Luxury)",
-    detectedEvent: "Submitted form with ₹48L budget for 4BHK Penthouse via Meta Ads Instant Form.",
-    sahyakAction: "Instantly bypassed general queue, assigned to top closer Aditya V., and armed a 2-minute WhatsApp proposal SLA.",
-    impact: "Closer responded in 1m 14s (3.8x higher win probability).",
+    detectedEvent: "Submitted inquiry form with ₹48L budget for 4BHK Penthouse via Meta Ads.",
+    sahyakAction: "Bypassed general queue, auto-assigned to senior closer Aditya V., and armed 2-minute WhatsApp proposal SLA.",
+    impact: "Closer dispatched verified PDF proposal in 1m 14s.",
     timestamp: "18s ago",
   },
   {
@@ -49,12 +51,12 @@ const RADAR_SIGNALS: RadarSignal[] = [
     title: "SLA Deal-Stall Warning",
     type: "risk",
     icon: AlertTriangle,
-    badge: "⚠️ DEAL-STALL RISK",
+    badge: "SLA DEAL RISK",
     badgeStyle: "bg-amber-50 text-amber-700 border-amber-200",
     leadName: "Sunil Joshi (Joshi Exports)",
-    detectedEvent: "No WhatsApp outreach recorded 4 minutes after quote request.",
-    sahyakAction: "Triggered high-priority mobile buzzer on closer's device and initiated automated manager escalation.",
-    impact: "Eliminated deal abandonment before prospect contacted another competitor.",
+    detectedEvent: "No initial outreach logged 4 minutes after quote request was ingested.",
+    sahyakAction: "Triggered priority mobile notification on closer's device and armed secondary manager escalation timer.",
+    impact: "Prevented deal abandonment before prospect contacted another vendor.",
     timestamp: "2m ago",
   },
   {
@@ -62,12 +64,12 @@ const RADAR_SIGNALS: RadarSignal[] = [
     title: "Voice Note Deal Extraction",
     type: "voice",
     icon: Mic,
-    badge: "🎙️ AI AUDIO TELEMETRY",
+    badge: "AI AUDIO PARSING",
     badgeStyle: "bg-blue-50 text-[#0084ff] border-blue-200",
     leadName: "Dr. Arvind Rao (CarePlus)",
-    detectedEvent: "Closer spoke a 14-second voice note while driving: 'Client approved ₹24L package, wants Tuesday site visit'.",
-    sahyakAction: "AI transcribed audio, parsed deal value, updated pipeline stage to 'Site Visit', and scheduled calendar invite.",
-    impact: "Saved 15 minutes of manual data entry after the meeting.",
+    detectedEvent: "Closer recorded a 14-second voice memo: 'Client approved ₹24L package, scheduled Tuesday site visit'.",
+    sahyakAction: "AI parsed deal value, updated pipeline stage to 'Site Visit Confirmed', and scheduled calendar sync.",
+    impact: "Saved 15 minutes of manual post-meeting CRM data entry.",
     timestamp: "12m ago",
   },
   {
@@ -75,12 +77,12 @@ const RADAR_SIGNALS: RadarSignal[] = [
     title: "Milestone Won & Edge Sync",
     type: "win",
     icon: Trophy,
-    badge: "🏆 CLOSED WON EVENT",
+    badge: "CLOSED WON EVENT",
     badgeStyle: "bg-emerald-50 text-emerald-700 border-emerald-200",
     leadName: "Kavita Singhania (Logistics)",
-    detectedEvent: "Advance token payment of ₹5,00,000 received via Razorpay webhook.",
-    sahyakAction: "Moved deal to 'Closed Won', credited commission to rep leaderboard, and archived contract vault.",
-    impact: "Synced to VP executive telemetry dashboard in 180ms.",
+    detectedEvent: "Advance token payment of ₹5,00,000 received via payment gateway webhook.",
+    sahyakAction: "Moved deal to 'Closed Won', credited commission to rep leaderboard, and archived contract record.",
+    impact: "Synced to executive revenue dashboard in real time.",
     timestamp: "24m ago",
   },
 ];
@@ -149,7 +151,7 @@ export const IntelligenceRadar: React.FC = () => {
         })}
       </div>
 
-      {/* Deep-Dive Signal HUD Card (Light Clean Surface) */}
+      {/* Deep-Dive Signal HUD Card */}
       <AnimatePresence mode="wait">
         <motion.div
           key={activeSignal.id}
@@ -163,11 +165,11 @@ export const IntelligenceRadar: React.FC = () => {
           <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-xs font-mono text-[#0084ff] font-bold">
-                <Radar className="w-4 h-4 animate-spin text-[#0084ff]" />
+                <Radar className="w-4 h-4 text-[#0084ff]" />
                 <span>SIGNAL TELEMETRY REPORT</span>
               </div>
               <h4 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading">
-                {activeSignal.title} // {activeSignal.leadName}
+                {activeSignal.title} &bull; {activeSignal.leadName}
               </h4>
             </div>
 
@@ -178,7 +180,7 @@ export const IntelligenceRadar: React.FC = () => {
             </span>
           </div>
 
-          {/* 3 Step Action Blueprint (Light Cards) */}
+          {/* 3 Step Action Blueprint */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
               <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">

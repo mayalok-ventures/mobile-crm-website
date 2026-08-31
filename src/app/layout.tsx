@@ -1,23 +1,32 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, Inter } from "next/font/google";
+import { Outfit, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { GlobalNavbar } from "@/components/GlobalNavbar";
 import { GlobalFooter } from "@/components/GlobalFooter";
 import { PageTransition } from "@/components/PageTransition";
 import "./globals.css";
 
-const plusJakarta = Plus_Jakarta_Sans({
+const outfit = Outfit({
   variable: "--font-heading",
   subsets: ["latin"],
   display: "swap",
   preload: true,
-  weight: ["500", "600", "700", "800"],
+  weight: ["600", "700", "800"],
 });
 
-const inter = Inter({
+const dmSans = DM_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
   preload: true,
+  weight: ["400", "500", "600", "700"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  display: "swap",
+  preload: true,
+  weight: ["400", "500", "600", "700"],
 });
 
 export const viewport: Viewport = {
@@ -218,7 +227,7 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
       data-scroll-behavior="smooth"
-      className={`${plusJakarta.variable} ${inter.variable} scroll-smooth antialiased overflow-x-clip`}
+      className={`${outfit.variable} ${dmSans.variable} ${jetbrainsMono.variable} scroll-smooth antialiased overflow-x-clip`}
     >
       <head>
         <script

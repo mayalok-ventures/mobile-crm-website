@@ -50,8 +50,9 @@ export function GlobalFooter() {
               The universal mobile-first CRM engineered to stop sales leakage across Agencies, Finance, Healthcare, Retail, SaaS, Consulting, and High-Velocity Markets.
             </p>
             <div className="pt-1">
-              <span className="inline-flex items-center text-[11px] font-semibold text-slate-700 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-                ⚡ Zero Admin Overhead
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                <Zap className="w-3 h-3 text-[#0077ff]" />
+                <span>Mobile-First Sales Architecture</span>
               </span>
             </div>
           </div>

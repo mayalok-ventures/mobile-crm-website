@@ -136,12 +136,48 @@ const INDUSTRY_RESOURCES: IndustryResource[] = [
 
 export default function ResourcesPage() {
   const [activeResourceIndex, setActiveResourceIndex] = useState(0);
+  const [selectedLang, setSelectedLang] = useState<"json" | "curl" | "ts" | "python">("json");
   const [copied, setCopied] = useState(false);
 
   const activeResource = INDUSTRY_RESOURCES[activeResourceIndex];
 
+  const getCodeSnippet = () => {
+    if (selectedLang === "json") {
+      return activeResource.samplePayload;
+    }
+    if (selectedLang === "curl") {
+      return `curl -X POST "https://crm.sahyak.com/api/v1/webhooks/${activeResource.id}" \\
+  -H "Content-Type: application/json" \\
+  -H "X-Sahyak-Signature: sha256=your_hmac_secret" \\
+  -d '${activeResource.samplePayload.replace(/\/\/.*$/gm, "").trim()}'`;
+    }
+    if (selectedLang === "ts") {
+      return `import { SahyakClient } from "@sahyak/node-sdk";
+
+const client = new SahyakClient({
+  apiKey: process.env.SAHYAK_API_KEY!,
+});
+
+await client.webhooks.dispatch("${activeResource.id}", ${activeResource.samplePayload.replace(/\/\/.*$/gm, "").trim()});`;
+    }
+    if (selectedLang === "python") {
+      return `import requests
+
+url = "https://crm.sahyak.com/api/v1/webhooks/${activeResource.id}"
+headers = {
+    "Content-Type": "application/json",
+    "X-Sahyak-Signature": "sha256=your_hmac_secret"
+}
+payload = ${activeResource.samplePayload.replace(/\/\/.*$/gm, "").trim()}
+
+response = requests.post(url, json=payload, headers=headers)
+print("Ingest Latency:", response.elapsed.total_seconds(), "seconds")`;
+    }
+    return activeResource.samplePayload;
+  };
+
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(activeResource.samplePayload);
+    navigator.clipboard.writeText(getCodeSnippet());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -280,10 +316,49 @@ export default function ResourcesPage() {
 
                 {/* Right Column: Copyable Webhook Code Sandbox (Light Clean Panel) */}
                 <div className="lg:col-span-6 bg-white rounded-2xl p-6 sm:p-8 text-slate-900 space-y-4 shadow-xl border border-slate-200/90">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                    <div className="flex items-center gap-2 text-xs font-mono text-[#0084ff] font-bold">
-                      <Code2 className="w-4 h-4" />
-                      <span>LIVE WEBHOOK INGESTION PAYLOAD</span>
+                  <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    {/* Language Switcher Tabs */}
+                    <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-lg border border-slate-200 text-xs font-mono">
+                      <button
+                        onClick={() => setSelectedLang("json")}
+                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer font-bold ${
+                          selectedLang === "json"
+                            ? "bg-white text-[#0084ff] shadow-2xs"
+                            : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        JSON
+                      </button>
+                      <button
+                        onClick={() => setSelectedLang("curl")}
+                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer font-bold ${
+                          selectedLang === "curl"
+                            ? "bg-white text-[#0084ff] shadow-2xs"
+                            : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        cURL
+                      </button>
+                      <button
+                        onClick={() => setSelectedLang("ts")}
+                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer font-bold ${
+                          selectedLang === "ts"
+                            ? "bg-white text-[#0084ff] shadow-2xs"
+                            : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        TypeScript
+                      </button>
+                      <button
+                        onClick={() => setSelectedLang("python")}
+                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer font-bold ${
+                          selectedLang === "python"
+                            ? "bg-white text-[#0084ff] shadow-2xs"
+                            : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        Python
+                      </button>
                     </div>
 
                     <button
@@ -298,18 +373,18 @@ export default function ResourcesPage() {
                       ) : (
                         <>
                           <Copy className="w-3 h-3 text-slate-500" />
-                          <span>Copy Payload</span>
+                          <span>Copy Snippet</span>
                         </>
                       )}
                     </button>
                   </div>
 
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-800 overflow-x-auto leading-relaxed whitespace-pre">
-                    {activeResource.samplePayload}
+                    {getCodeSnippet()}
                   </div>
 
                   <div className="text-[11px] text-slate-500 flex items-center justify-between pt-1">
-                    <span>Compatible with cURL, Node.js, Python, &amp; Postman</span>
+                    <span>Edge Ingestion SLA: &lt; 380ms</span>
                     <span className="text-[#0084ff] font-mono font-semibold">HMAC-SHA256 Ready</span>
                   </div>
                 </div>
