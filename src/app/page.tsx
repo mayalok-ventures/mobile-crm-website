@@ -4,15 +4,9 @@ import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  Zap,
   ArrowRight,
   ChevronRight,
   Check,
-  Smartphone,
-  ShieldCheck,
-  BarChart3,
-  Clock,
-  Sparkles,
 } from "lucide-react";
 
 import { InteractiveHeroSandbox } from "@/components/home/InteractiveHeroSandbox";
@@ -39,9 +33,12 @@ export default function Home() {
   return (
     <div className="w-full min-h-screen bg-white text-slate-900 font-sans selection:bg-[#0077ff] selection:text-white">
       {/* ─────────────────────────────────────────────────────────────
-          1. HERO SECTION (100% LIGHT & AIRY WITH LAYERED COMPOSITE)
+          1. HERO SECTION
       ───────────────────────────────────────────────────────────── */}
-      <section className="relative pt-10 pb-16 lg:pt-18 lg:pb-24 overflow-hidden bg-gradient-to-b from-blue-50/40 via-white to-white border-b border-slate-200/80">
+      <section
+        data-analytics-section="hero"
+        className="relative pt-10 pb-16 lg:pt-18 lg:pb-24 overflow-hidden bg-gradient-to-b from-blue-50/40 via-white to-white border-b border-slate-200/80"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-8 sm:space-y-10">
           {/* Eyebrow Pill */}
           <motion.div
@@ -136,9 +133,10 @@ export default function Home() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          2. THE CORE PROBLEM TO TRANSFORMATION (SPLIT EDITORIAL SECTION)
+          2. THE CORE PROBLEM TO TRANSFORMATION
       ───────────────────────────────────────────────────────────── */}
       <motion.section
+        data-analytics-section="problem"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.05 }}
@@ -151,9 +149,10 @@ export default function Home() {
       </motion.section>
 
       {/* ─────────────────────────────────────────────────────────────
-          3. DEDICATED MOBILE-FIRST CLOSER ENGINE (PRODUCT-LED SPLIT)
+          3. DEDICATED MOBILE-FIRST CLOSER ENGINE
       ───────────────────────────────────────────────────────────── */}
       <motion.section
+        data-analytics-section="mobile_closer"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.05 }}
@@ -166,9 +165,10 @@ export default function Home() {
       </motion.section>
 
       {/* ─────────────────────────────────────────────────────────────
-          4. SPEED-TO-LEAD EVENT CONDUIT (FULL-WIDTH WORKFLOW)
+          4. SPEED-TO-LEAD EVENT CONDUIT
       ───────────────────────────────────────────────────────────── */}
       <motion.section
+        data-analytics-section="conduit"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.05 }}
@@ -181,9 +181,10 @@ export default function Home() {
       </motion.section>
 
       {/* ─────────────────────────────────────────────────────────────
-          5. SIGNAL TELEMETRY RADAR (COMPACT DATA FEED & HUD)
+          5. SIGNAL TELEMETRY RADAR
       ───────────────────────────────────────────────────────────── */}
       <motion.section
+        data-analytics-section="radar"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.05 }}
@@ -208,9 +209,10 @@ export default function Home() {
       </motion.section>
 
       {/* ─────────────────────────────────────────────────────────────
-          6. 7 PRE-CONFIGURED INDUSTRY PIPELINES (TABBED BLUEPRINTS)
+          6. 7 PRE-CONFIGURED INDUSTRY PIPELINES
       ───────────────────────────────────────────────────────────── */}
       <motion.section
+        data-analytics-section="industry"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.05 }}
@@ -235,9 +237,10 @@ export default function Home() {
       </motion.section>
 
       {/* ─────────────────────────────────────────────────────────────
-          7. INTERACTIVE REVENUE ROI CALCULATOR (TWO-COLUMN SPLIT)
+          7. INTERACTIVE REVENUE ROI CALCULATOR
       ───────────────────────────────────────────────────────────── */}
       <motion.section
+        data-analytics-section="calculator"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.05 }}
@@ -250,9 +253,10 @@ export default function Home() {
       </motion.section>
 
       {/* ─────────────────────────────────────────────────────────────
-          8. DIRECT COMPARISON MATRIX (STRUCTURED DATA TABLE)
+          8. DIRECT COMPARISON MATRIX
       ───────────────────────────────────────────────────────────── */}
       <motion.section
+        data-analytics-section="comparison"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.05 }}
@@ -277,9 +281,9 @@ export default function Home() {
       </motion.section>
 
       {/* ─────────────────────────────────────────────────────────────
-          9. FINAL CONVERSION BANNER (ATMOSPHERIC PASTEL GRADIENT)
+          9. FINAL CONVERSION BANNER
       ───────────────────────────────────────────────────────────── */}
-      <section className="py-16 lg:py-24 bg-white">
+      <section data-analytics-section="cta" className="py-16 lg:py-24 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="atmospheric-cta-bg rounded-2xl p-8 sm:p-14 text-center space-y-8 relative overflow-hidden shadow-xl">
             <div className="relative z-10 space-y-6 max-w-3xl mx-auto">

@@ -1,48 +1,47 @@
 /**
  * GET /api/admin/analytics
  *
- * Returns real aggregated analytics for the admin dashboard.
- * Protected — requires valid admin session cookie.
- *
- * Returns:
- *   - traffic7d / traffic30d chart data
- *   - unique visitors, total pageviews, today's stats
- *   - top pages, referrers, devices, countries
+ * Authenticated Admin Analytics API.
+ * Returns real D1 aggregated metrics for 7D, 30D, and 1Y ranges.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminSessionToken } from "@/lib/security";
-import { getAnalyticsSummary } from "@/lib/analytics-store";
-import { getAllLeads } from "@/lib/leads-store";
+import { getAdminAnalyticsSummary } from "@/lib/analytics-store";
 import { getD1Database } from "@/lib/cloudflare-context";
 
 export const runtime = "edge";
 
 export async function GET(req: NextRequest) {
   try {
-    // Auth check
+    // 1. Session Authentication
     const sessionCookie = req.cookies.get("sahyak_admin_session")?.value;
     if (!sessionCookie) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "Unauthorized access." }, { status: 401 });
     }
 
     const verification = await verifyAdminSessionToken(sessionCookie);
     if (!verification.valid) {
-      return NextResponse.json({ success: false, error: "Invalid session" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "Invalid or expired session." }, { status: 401 });
     }
 
+    // 2. Parse Date Range Parameter
+    const url = new URL(req.url);
+    const rawRange = url.searchParams.get("range") || "7d";
+    const range = (["7d", "30d", "1y"].includes(rawRange) ? rawRange : "7d") as "7d" | "30d" | "1y";
+
+    // 3. Query Database Aggregation
     const db = getD1Database();
-    const leads = await getAllLeads(db);
-    const summary = await getAnalyticsSummary(leads.length, db);
+    const summary = await getAdminAnalyticsSummary(range, db);
 
     return NextResponse.json({
       success: true,
       data: summary,
     });
   } catch (err) {
-    console.error("[/api/admin/analytics] Error:", err);
+    console.error("[GET /api/admin/analytics Error]:", err);
     return NextResponse.json(
-      { success: false, error: "Analytics service error." },
+      { success: false, error: "Failed to retrieve analytics telemetry." },
       { status: 500 }
     );
   }

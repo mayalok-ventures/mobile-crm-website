@@ -38,10 +38,39 @@ export default function ContactPage() {
     setErrorMessage("");
 
     try {
+      // Capture visitor attribution metadata
+      let vid = "";
+      let sid = "";
+      let landingPage = "/";
+      try {
+        vid = localStorage.getItem("_sahyak_vid") || "";
+        sid = sessionStorage.getItem("_sahyak_sid") || "";
+        landingPage = sessionStorage.getItem("_sahyak_landing") || "/";
+      } catch {}
+
+      const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+      const utmSource = searchParams?.get("utm_source") || "";
+      const utmMedium = searchParams?.get("utm_medium") || "";
+      const utmCampaign = searchParams?.get("utm_campaign") || "";
+      const utmTerm = searchParams?.get("utm_term") || "";
+      const utmContent = searchParams?.get("utm_content") || "";
+
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          vid,
+          sid,
+          landing_page: landingPage,
+          referrer: typeof document !== "undefined" ? document.referrer : "",
+          utm_source: utmSource,
+          utm_medium: utmMedium,
+          utm_campaign: utmCampaign,
+          utm_term: utmTerm,
+          utm_content: utmContent,
+          _ts: Date.now(),
+        }),
       });
 
       const data = await res.json().catch(() => ({}));

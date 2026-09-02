@@ -13,16 +13,11 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-interface TrafficPoint {
+export interface TrafficPoint {
   date: string;
   visitors: number;
   pageviews: number;
   leads: number;
-}
-
-interface SectionPoint {
-  section: string;
-  avgTimeSec: number;
 }
 
 export function TrafficAreaChart({ data }: { data: TrafficPoint[] }) {
@@ -32,13 +27,17 @@ export function TrafficAreaChart({ data }: { data: TrafficPoint[] }) {
         <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="visitorGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#0f172a" stopOpacity={0.25} />
+              <stop offset="5%" stopColor="#0077ff" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#0077ff" stopOpacity={0.0} />
+            </linearGradient>
+            <linearGradient id="pageviewGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#0f172a" stopOpacity={0.2} />
               <stop offset="95%" stopColor="#0f172a" stopOpacity={0.0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
           <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} />
-          <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+          <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} allowDecimals={false} />
           <Tooltip
             contentStyle={{
               backgroundColor: "#ffffff",
@@ -51,9 +50,18 @@ export function TrafficAreaChart({ data }: { data: TrafficPoint[] }) {
           />
           <Area
             type="monotone"
+            dataKey="pageviews"
+            name="Page Views"
+            stroke="#94a3b8"
+            strokeWidth={1.5}
+            fillOpacity={1}
+            fill="url(#pageviewGradient)"
+          />
+          <Area
+            type="monotone"
             dataKey="visitors"
             name="Unique Visitors"
-            stroke="#0f172a"
+            stroke="#0077ff"
             strokeWidth={2.5}
             fillOpacity={1}
             fill="url(#visitorGradient)"
@@ -64,31 +72,47 @@ export function TrafficAreaChart({ data }: { data: TrafficPoint[] }) {
   );
 }
 
-interface PageViewPoint {
-  section: string;
-  views: number;
+export interface MetricBarPoint {
+  label: string;
+  value: number;
 }
 
-export function SectionEngagementBarChart({ data }: { data: PageViewPoint[] }) {
+export function HorizontalMetricBarChart({
+  data,
+  metricName = "Views",
+  color = "#0077ff",
+}: {
+  data: MetricBarPoint[];
+  metricName?: string;
+  color?: string;
+}) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="h-60 w-full flex items-center justify-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">
+        No telemetry recorded for this period
+      </div>
+    );
+  }
+
   return (
     <div className="h-60 w-full pt-1">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} layout="vertical" margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" horizontal={false} />
           <XAxis type="number" stroke="#94a3b8" fontSize={10} allowDecimals={false} />
-          <YAxis type="category" dataKey="section" stroke="#64748b" fontSize={10} width={90} tickLine={false} />
+          <YAxis type="category" dataKey="label" stroke="#64748b" fontSize={10} width={100} tickLine={false} />
           <Tooltip
             contentStyle={{
               backgroundColor: "#ffffff",
               borderColor: "#e2e8f0",
               borderRadius: "10px",
               fontSize: "11px",
+              fontWeight: "bold",
             }}
           />
-          <Bar dataKey="views" name="Page Views" fill="#0077ff" radius={[0, 6, 6, 0]} />
+          <Bar dataKey="value" name={metricName} fill={color} radius={[0, 6, 6, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
   );
 }
-

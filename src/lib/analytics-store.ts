@@ -1,365 +1,681 @@
 /**
- * Analytics Store — Real Visitor Tracking
+ * Sahyak Production Analytics Engine
  *
- * Stores page view events in Cloudflare D1 when available,
- * with an edge in-memory fallback ring buffer for local dev.
- *
- * D1 Table: page_views
- * Schema:
- *   id TEXT PRIMARY KEY,
- *   page TEXT NOT NULL,
- *   referrer TEXT,
- *   country TEXT,
- *   city TEXT,
- *   device TEXT,
- *   browser TEXT,
- *   visitor_hash TEXT,
- *   session_hash TEXT,
- *   ts INTEGER NOT NULL,        -- Unix timestamp (ms)
- *   created_at TEXT NOT NULL    -- ISO string
+ * Full lifecycle visitor, session, pageview, section dwell, live heartbeat,
+ * and lead attribution store powered by Cloudflare D1.
  */
 
-import { executeD1Query, D1Database } from "@/lib/d1-database";
+import { executeD1Query, executeD1Run, D1Database } from "@/lib/d1-database";
 
-export interface PageViewEvent {
-  id: string;
-  page: string;
-  referrer: string;
-  country: string;
-  city: string;
-  device: string;
-  browser: string;
-  visitor_hash: string;
-  session_hash: string;
+export interface IngestEvent {
+  type: "pageview" | "page_duration" | "section_engagement" | "heartbeat";
+  visitorId: string;
+  sessionId: string;
+  path: string;
+  title?: string;
+  referrer?: string;
+  source?: string;
+  medium?: string;
+  campaign?: string;
+  term?: string;
+  content?: string;
+  landingPage?: string;
+  durationSec?: number;
+  sectionId?: string;
+  isEntry?: boolean;
+  isExit?: boolean;
+  country?: string;
+  city?: string;
+  device?: string;
+  browser?: string;
+  os?: string;
   ts: number;
-  created_at: string;
 }
 
-// ─── Edge in-memory ring buffer (attached to globalThis for local dev) ─────────────
-const MAX_EDGE_EVENTS = 2000;
-const globalForAnalytics = globalThis as unknown as { __edgePageViews?: PageViewEvent[] };
-if (!globalForAnalytics.__edgePageViews) {
-  globalForAnalytics.__edgePageViews = [];
-}
-const edgePageViews = globalForAnalytics.__edgePageViews;
-
-// ─── Save a page view event ───────────────────────────────────────────────────
-export async function savePageView(event: PageViewEvent, db?: D1Database | null): Promise<void> {
-  if (db) {
-    try {
-      await executeD1Query(
-        db,
-        `INSERT OR IGNORE INTO page_views
-           (id, page, referrer, country, city, device, browser, visitor_hash, session_hash, ts, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          event.id,
-          event.page,
-          event.referrer,
-          event.country,
-          event.city,
-          event.device,
-          event.browser,
-          event.visitor_hash,
-          event.session_hash,
-          event.ts,
-          event.created_at,
-        ]
-      );
-    } catch (err) {
-      console.error("[Analytics] D1 insert error:", err);
-    }
-  }
-
-  // Always add to edge buffer
-  edgePageViews.unshift(event);
-  if (edgePageViews.length > MAX_EDGE_EVENTS) edgePageViews.pop();
+export interface TrafficDataPoint {
+  date: string;
+  visitors: number;
+  pageviews: number;
+  leads: number;
 }
 
-// ─── Query helpers ─────────────────────────────────────────────────────────────
-
-export interface TrafficDay {
-  date: string;       // "Sep 01"
-  visitors: number;   // unique visitor_hash count
-  pageviews: number;  // total events
-  leads: number;      // derived from lead count
+export interface ChannelMetrics {
+  channel: string;
+  visitors: number;
+  leads: number;
+  conversionRate: string;
+  share: string;
 }
 
-export interface AnalyticsSummary {
-  totalPageviews: number;
+export interface PageMetrics {
+  page: string;
+  views: number;
   uniqueVisitors: number;
-  todayPageviews: number;
-  todayVisitors: number;
-  topPages: { page: string; views: number }[];
-  topReferrers: { referrer: string; views: number }[];
-  deviceBreakdown: { device: string; count: number }[];
-  countryBreakdown: { country: string; count: number }[];
-  traffic7d: TrafficDay[];
-  traffic30d: TrafficDay[];
+  avgTimeSec: number;
 }
 
-/**
- * Build analytics summary from D1 or edge buffer
- */
-export async function getAnalyticsSummary(
-  leadCount: number,
-  db?: D1Database | null
-): Promise<AnalyticsSummary> {
+export interface SectionMetrics {
+  section: string;
+  visitors: number;
+  avgDwellSec: number;
+}
+
+export interface GeoMetrics {
+  name: string;
+  visitors: number;
+  percentage: number;
+}
+
+export interface DeviceMetrics {
+  name: string;
+  count: number;
+  percentage: number;
+}
+
+export interface AdminAnalyticsData {
+  range: "7d" | "30d" | "1y";
+  overview: {
+    uniqueVisitors: number;
+    newVisitors: number;
+    returningVisitors: number;
+    returningRate: string;
+    liveVisitors: number;
+    totalPageviews: number;
+    todayVisitors: number;
+    todayPageviews: number;
+    totalLeads: number;
+    overallConversionRate: string;
+  };
+  trafficSeries: TrafficDataPoint[];
+  topChannels: ChannelMetrics[];
+  topReferrers: { referrer: string; count: number }[];
+  topCampaigns: { campaign: string; visitors: number; leads: number }[];
+  topPages: PageMetrics[];
+  sectionEngagement: SectionMetrics[];
+  topCountries: GeoMetrics[];
+  topCities: GeoMetrics[];
+  deviceBreakdown: DeviceMetrics[];
+  browserBreakdown: DeviceMetrics[];
+}
+
+// ── In-Memory Ring Buffer for Local Dev ─────────────────────────────────────────
+const MAX_MEM_EVENTS = 1000;
+const memPageViews: IngestEvent[] = [];
+const memLiveVisitors = new Map<string, { visitorId: string; path: string; lastSeen: number; country: string }>();
+
+// ── Normalise Traffic Source from Referrer & UTM ───────────────────────────────
+export function normalizeTrafficChannel(referrer: string, utmSource?: string, utmMedium?: string): string {
+  const src = (utmSource || "").toLowerCase();
+  const med = (utmMedium || "").toLowerCase();
+  const ref = (referrer || "").toLowerCase();
+
+  if (src === "facebook" || src === "meta" || src === "instagram" || ref.includes("facebook.com") || ref.includes("instagram.com") || ref.includes("fb.com")) {
+    return "Meta Ads";
+  }
+  if (src === "google" && (med === "cpc" || med === "ppc" || med === "adwords" || med === "paid")) {
+    return "Google Ads";
+  }
+  if (src === "google" || ref.includes("google.com") || ref.includes("google.co.in")) {
+    return "Organic Search";
+  }
+  if (src === "linkedin" || ref.includes("linkedin.com") || ref.includes("lnkd.in")) {
+    return "LinkedIn";
+  }
+  if (src === "whatsapp" || ref.includes("whatsapp.com") || ref.includes("api.whatsapp.com") || ref.includes("wa.me")) {
+    return "WhatsApp Direct";
+  }
+  if (src === "youtube" || ref.includes("youtube.com") || ref.includes("youtu.be")) {
+    return "YouTube";
+  }
+  if (src === "twitter" || src === "x" || ref.includes("t.co") || ref.includes("twitter.com") || ref.includes("x.com")) {
+    return "X / Twitter";
+  }
+  if (ref && !ref.includes("sahyak.com")) {
+    try {
+      const url = new URL(ref);
+      return url.hostname.replace(/^www\./, "");
+    } catch {
+      return "Referral";
+    }
+  }
+  return "Direct / Organic";
+}
+
+// ── Record Telemetry Event in D1 ──────────────────────────────────────────────
+export async function recordAnalyticsEvent(event: IngestEvent, db?: D1Database | null): Promise<void> {
+  const channel = normalizeTrafficChannel(event.referrer || "", event.source, event.medium);
+  const nowIso = new Date().toISOString();
+
   if (db) {
     try {
-      return await buildFromD1(leadCount, db);
-    } catch (err) {
-      console.error("[Analytics] D1 summary error:", err);
-    }
-  }
-  return buildFromEdgeBuffer(leadCount);
-}
+      if (event.type === "pageview") {
+        const pvId = `pv_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`;
 
-// ─── D1-backed analytics ──────────────────────────────────────────────────────
-async function buildFromD1(leadCount: number, db: D1Database): Promise<AnalyticsSummary> {
-  const now = Date.now();
-  const day7Ago = now - 7 * 24 * 60 * 60 * 1000;
-  const day30Ago = now - 30 * 24 * 60 * 60 * 1000;
-  const dayStart = new Date();
-  dayStart.setHours(0, 0, 0, 0);
+        // 1. Upsert visitor
+        await executeD1Run(
+          db,
+          `INSERT INTO visitors (
+             visitor_id, first_seen, last_seen, total_sessions, total_pageviews,
+             first_source, first_referrer, first_landing_page, country, city, device, browser, os, created_at, updated_at
+           ) VALUES (?, ?, ?, 1, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(visitor_id) DO UPDATE SET
+             last_seen = ?,
+             total_pageviews = total_pageviews + 1,
+             country = CASE WHEN country = '' THEN excluded.country ELSE country END,
+             city = CASE WHEN city = '' THEN excluded.city ELSE city END,
+             updated_at = ?`,
+          [
+            event.visitorId, event.ts, event.ts, channel, event.referrer || "", event.path,
+            event.country || "", event.city || "", event.device || "Desktop", event.browser || "Other", event.os || "Other",
+            nowIso, nowIso,
+            event.ts, nowIso,
+          ]
+        );
 
-  const [totalRes, todayRes, topPagesRes, topReferrersRes, devicesRes, countriesRes] =
-    await Promise.all([
-      executeD1Query<{ total: number; unique_visitors: number }>(
-        db,
-        "SELECT COUNT(*) as total, COUNT(DISTINCT visitor_hash) as unique_visitors FROM page_views",
-        []
-      ),
-      executeD1Query<{ total: number; unique_visitors: number }>(
-        db,
-        "SELECT COUNT(*) as total, COUNT(DISTINCT visitor_hash) as unique_visitors FROM page_views WHERE ts >= ?",
-        [dayStart.getTime()]
-      ),
-      executeD1Query<{ page: string; views: number }>(
-        db,
-        "SELECT page, COUNT(*) as views FROM page_views GROUP BY page ORDER BY views DESC LIMIT 8",
-        []
-      ),
-      executeD1Query<{ referrer: string; views: number }>(
-        db,
-        "SELECT CASE WHEN referrer = '' OR referrer IS NULL THEN 'Direct / Organic' ELSE referrer END as referrer, COUNT(*) as views FROM page_views GROUP BY referrer ORDER BY views DESC LIMIT 6",
-        []
-      ),
-      executeD1Query<{ device: string; count: number }>(
-        db,
-        "SELECT device, COUNT(*) as count FROM page_views GROUP BY device ORDER BY count DESC",
-        []
-      ),
-      executeD1Query<{ country: string; count: number }>(
-        db,
-        "SELECT country, COUNT(*) as count FROM page_views WHERE country != '' GROUP BY country ORDER BY count DESC LIMIT 6",
-        []
-      ),
-    ]);
+        // 2. Upsert session
+        await executeD1Run(
+          db,
+          `INSERT INTO sessions (
+             session_id, visitor_id, start_time, last_active, page_count, duration_sec,
+             entry_page, exit_page, referrer, source, medium, campaign, term, content,
+             country, city, device, browser, os, is_bounce, created_at
+           ) VALUES (?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+           ON CONFLICT(session_id) DO UPDATE SET
+             last_active = ?,
+             page_count = page_count + 1,
+             exit_page = ?,
+             is_bounce = 0`,
+          [
+            event.sessionId, event.visitorId, event.ts, event.ts,
+            event.path, event.path, event.referrer || "", channel, event.medium || "", event.campaign || "",
+            event.term || "", event.content || "", event.country || "", event.city || "",
+            event.device || "Desktop", event.browser || "Other", event.os || "Other",
+            nowIso,
+            event.ts, event.path,
+          ]
+        );
 
-  // 7-day traffic chart
-  const traffic7d = await buildDailyBuckets(db, day7Ago, 7, leadCount);
-  // 30-day traffic chart
-  const traffic30d = await buildWeeklyBuckets(db, day30Ago, leadCount);
+        // 3. Insert pageview
+        await executeD1Run(
+          db,
+          `INSERT INTO page_views (
+             id, visitor_id, session_id, path, title, referrer, source, utm_campaign,
+             duration_sec, entry_page, country, city, device, browser, os, is_entry, is_exit, ts, created_at
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+          [
+            pvId, event.visitorId, event.sessionId, event.path, event.title || "",
+            event.referrer || "", channel, event.campaign || "", event.landingPage || event.path,
+            event.country || "", event.city || "", event.device || "Desktop", event.browser || "Other", event.os || "Other",
+            event.isEntry ? 1 : 0, event.ts, nowIso,
+          ]
+        );
 
-  const totalRow = totalRes.data[0] || { total: 0, unique_visitors: 0 };
-  const todayRow = todayRes.data[0] || { total: 0, unique_visitors: 0 };
+        // 4. Update live visitor table
+        await executeD1Run(
+          db,
+          `INSERT INTO live_visitors (session_id, visitor_id, current_path, last_seen, country, city, device, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(session_id) DO UPDATE SET
+             current_path = excluded.current_path,
+             last_seen = excluded.last_seen`,
+          [
+            event.sessionId, event.visitorId, event.path, event.ts,
+            event.country || "", event.city || "", event.device || "Desktop", nowIso,
+          ]
+        );
+      } else if (event.type === "page_duration") {
+        const sec = Math.min(Math.max(event.durationSec || 0, 1), 7200); // 1s to 2 hours
+        // Update pageview duration
+        await executeD1Run(
+          db,
+          `UPDATE page_views SET duration_sec = duration_sec + ?, is_exit = ?
+           WHERE session_id = ? AND path = ? AND ts = (
+             SELECT MAX(ts) FROM page_views WHERE session_id = ? AND path = ?
+           )`,
+          [sec, event.isExit ? 1 : 0, event.sessionId, event.path, event.sessionId, event.path]
+        );
 
-  return {
-    totalPageviews: totalRow.total,
-    uniqueVisitors: totalRow.unique_visitors,
-    todayPageviews: todayRow.total,
-    todayVisitors: todayRow.unique_visitors,
-    topPages: topPagesRes.data,
-    topReferrers: topReferrersRes.data,
-    deviceBreakdown: devicesRes.data,
-    countryBreakdown: countriesRes.data,
-    traffic7d,
-    traffic30d,
-  };
-}
-
-async function buildDailyBuckets(
-  db: D1Database,
-  fromTs: number,
-  days: number,
-  leadCount: number
-): Promise<TrafficDay[]> {
-  const buckets: TrafficDay[] = [];
-
-  for (let i = days - 1; i >= 0; i--) {
-    const bucketStart = new Date();
-    bucketStart.setHours(0, 0, 0, 0);
-    bucketStart.setDate(bucketStart.getDate() - i);
-    const bucketEnd = new Date(bucketStart);
-    bucketEnd.setDate(bucketEnd.getDate() + 1);
-
-    const res = await executeD1Query<{ pageviews: number; visitors: number }>(
-      db,
-      "SELECT COUNT(*) as pageviews, COUNT(DISTINCT visitor_hash) as visitors FROM page_views WHERE ts >= ? AND ts < ?",
-      [bucketStart.getTime(), bucketEnd.getTime()]
-    );
-
-    const row = res.data[0] || { pageviews: 0, visitors: 0 };
-    const label = i === 0 ? "Today" : bucketStart.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-
-    buckets.push({
-      date: label,
-      visitors: row.visitors,
-      pageviews: row.pageviews,
-      leads: i === 0 ? leadCount : 0,
-    });
-  }
-
-  // Sprinkle lead count across last 7 days proportionally (rough)
-  if (leadCount > 0) {
-    const totalViews = buckets.reduce((s, b) => s + b.pageviews, 0);
-    if (totalViews > 0) {
-      buckets.forEach((b) => {
-        b.leads = Math.round((b.pageviews / totalViews) * leadCount);
-      });
-    }
-  }
-
-  return buckets;
-}
-
-async function buildWeeklyBuckets(db: D1Database, fromTs: number, leadCount: number): Promise<TrafficDay[]> {
-  const buckets: TrafficDay[] = [];
-
-  for (let w = 3; w >= 0; w--) {
-    const weekStart = new Date();
-    weekStart.setHours(0, 0, 0, 0);
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay() - w * 7);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 7);
-
-    const res = await executeD1Query<{ pageviews: number; visitors: number }>(
-      db,
-      "SELECT COUNT(*) as pageviews, COUNT(DISTINCT visitor_hash) as visitors FROM page_views WHERE ts >= ? AND ts < ?",
-      [weekStart.getTime(), weekEnd.getTime()]
-    );
-
-    const row = res.data[0] || { pageviews: 0, visitors: 0 };
-    buckets.push({
-      date: `Week ${4 - w}`,
-      visitors: row.visitors,
-      pageviews: row.pageviews,
-      leads: 0,
-    });
-  }
-
-  if (leadCount > 0) {
-    const total = buckets.reduce((s, b) => s + b.pageviews, 0);
-    if (total > 0) {
-      buckets.forEach((b) => {
-        b.leads = Math.round((b.pageviews / total) * leadCount);
-      });
+        // Update session duration
+        await executeD1Run(
+          db,
+          `UPDATE sessions SET duration_sec = duration_sec + ?, last_active = ? WHERE session_id = ?`,
+          [sec, event.ts, event.sessionId]
+        );
+      } else if (event.type === "section_engagement" && event.sectionId) {
+        const sec = Math.min(Math.max(event.durationSec || 0, 1), 600);
+        const seId = `se_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
+        await executeD1Run(
+          db,
+          `INSERT INTO section_engagements (id, visitor_id, session_id, page_path, section_id, duration_sec, ts, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [seId, event.visitorId, event.sessionId, event.path, event.sectionId, sec, event.ts, nowIso]
+        );
+      } else if (event.type === "heartbeat") {
+        await executeD1Run(
+          db,
+          `INSERT INTO live_visitors (session_id, visitor_id, current_path, last_seen, country, city, device, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(session_id) DO UPDATE SET
+             current_path = excluded.current_path,
+             last_seen = excluded.last_seen`,
+          [
+            event.sessionId, event.visitorId, event.path, event.ts,
+            event.country || "", event.city || "", event.device || "Desktop", nowIso,
+          ]
+        );
+      }
+    } catch (d1Err) {
+      console.error("[AnalyticsStore] D1 write failed:", d1Err);
     }
   }
 
-  return buckets;
-}
-
-// ─── Edge buffer fallback ────────────────────────────────────────────────────
-function buildFromEdgeBuffer(leadCount: number): AnalyticsSummary {
-  const dayStart = new Date();
-  dayStart.setHours(0, 0, 0, 0);
-
-  const todayViews = edgePageViews.filter((e) => e.ts >= dayStart.getTime());
-  const uniqueVisitors = new Set(edgePageViews.map((e) => e.visitor_hash)).size;
-  const todayVisitors = new Set(todayViews.map((e) => e.visitor_hash)).size;
-
-  // Top pages
-  const pageCounts: Record<string, number> = {};
-  edgePageViews.forEach((e) => { pageCounts[e.page] = (pageCounts[e.page] || 0) + 1; });
-  const topPages = Object.entries(pageCounts)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 8)
-    .map(([page, views]) => ({ page, views }));
-
-  // Top referrers
-  const refCounts: Record<string, number> = {};
-  edgePageViews.forEach((e) => {
-    const ref = e.referrer || "Direct / Organic";
-    refCounts[ref] = (refCounts[ref] || 0) + 1;
-  });
-  const topReferrers = Object.entries(refCounts)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 6)
-    .map(([referrer, views]) => ({ referrer, views }));
-
-  // Device breakdown
-  const deviceCounts: Record<string, number> = {};
-  edgePageViews.forEach((e) => { deviceCounts[e.device] = (deviceCounts[e.device] || 0) + 1; });
-  const deviceBreakdown = Object.entries(deviceCounts)
-    .sort(([, a], [, b]) => b - a)
-    .map(([device, count]) => ({ device, count }));
-
-  // Country breakdown
-  const countryCounts: Record<string, number> = {};
-  edgePageViews.forEach((e) => {
-    if (e.country) countryCounts[e.country] = (countryCounts[e.country] || 0) + 1;
-  });
-  const countryBreakdown = Object.entries(countryCounts)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 6)
-    .map(([country, count]) => ({ country, count }));
-
-  // 7-day chart from edge buffer
-  const traffic7d: TrafficDay[] = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() - i);
-    const dEnd = new Date(d);
-    dEnd.setDate(dEnd.getDate() + 1);
-    const dayViews = edgePageViews.filter((e) => e.ts >= d.getTime() && e.ts < dEnd.getTime());
-    const label = i === 0 ? "Today" : d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    traffic7d.push({
-      date: label,
-      visitors: new Set(dayViews.map((e) => e.visitor_hash)).size,
-      pageviews: dayViews.length,
-      leads: 0,
+  // Memory fallback for local dev
+  if (event.type === "pageview") {
+    memPageViews.unshift(event);
+    if (memPageViews.length > MAX_MEM_EVENTS) memPageViews.pop();
+    memLiveVisitors.set(event.sessionId, {
+      visitorId: event.visitorId,
+      path: event.path,
+      lastSeen: event.ts,
+      country: event.country || "IN",
     });
-  }
-
-  // Sprinkle leads proportionally
-  if (leadCount > 0) {
-    const total = traffic7d.reduce((s, b) => s + b.pageviews, 0);
-    if (total > 0) {
-      traffic7d.forEach((b) => { b.leads = Math.round((b.pageviews / total) * leadCount); });
+  } else if (event.type === "heartbeat") {
+    const existing = memLiveVisitors.get(event.sessionId);
+    if (existing) {
+      existing.lastSeen = event.ts;
+      existing.path = event.path;
     } else {
-      traffic7d[traffic7d.length - 1].leads = leadCount;
+      memLiveVisitors.set(event.sessionId, {
+        visitorId: event.visitorId,
+        path: event.path,
+        lastSeen: event.ts,
+        country: event.country || "IN",
+      });
+    }
+  }
+}
+
+// ── Build Full Admin Analytics Aggregation ────────────────────────────────────
+export async function getAdminAnalyticsSummary(
+  range: "7d" | "30d" | "1y",
+  db?: D1Database | null
+): Promise<AdminAnalyticsData> {
+  const now = Date.now();
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
+
+  let fromTs = now - 7 * 24 * 60 * 60 * 1000;
+  if (range === "30d") fromTs = now - 30 * 24 * 60 * 60 * 1000;
+  if (range === "1y") fromTs = now - 365 * 24 * 60 * 60 * 1000;
+
+  // Live threshold: last 2.5 minutes (150 seconds)
+  const liveThresholdTs = now - 150 * 1000;
+
+  if (db) {
+    try {
+      // 1. Overview KPIs
+      const [
+        uniqueVisitorsRes,
+        newVisitorsRes,
+        pageviewsRes,
+        todayPvRes,
+        todayVisRes,
+        liveVisitorsRes,
+        leadsRes,
+      ] = await Promise.all([
+        executeD1Query<{ count: number }>(
+          db,
+          "SELECT COUNT(DISTINCT visitor_id) as count FROM page_views WHERE ts >= ?",
+          [fromTs]
+        ),
+        executeD1Query<{ count: number }>(
+          db,
+          "SELECT COUNT(*) as count FROM visitors WHERE first_seen >= ?",
+          [fromTs]
+        ),
+        executeD1Query<{ count: number }>(
+          db,
+          "SELECT COUNT(*) as count FROM page_views WHERE ts >= ?",
+          [fromTs]
+        ),
+        executeD1Query<{ count: number }>(
+          db,
+          "SELECT COUNT(*) as count FROM page_views WHERE ts >= ?",
+          [dayStart.getTime()]
+        ),
+        executeD1Query<{ count: number }>(
+          db,
+          "SELECT COUNT(DISTINCT visitor_id) as count FROM page_views WHERE ts >= ?",
+          [dayStart.getTime()]
+        ),
+        executeD1Query<{ count: number }>(
+          db,
+          "SELECT COUNT(DISTINCT session_id) as count FROM live_visitors WHERE last_seen >= ?",
+          [liveThresholdTs]
+        ),
+        executeD1Query<{ count: number }>(
+          db,
+          "SELECT COUNT(*) as count FROM leads",
+          []
+        ),
+      ]);
+
+      const uniqueVisitors = uniqueVisitorsRes.data[0]?.count || 0;
+      const newVisitors = newVisitorsRes.data[0]?.count || 0;
+      const returningVisitors = Math.max(0, uniqueVisitors - newVisitors);
+      const returningRate = uniqueVisitors > 0
+        ? `${Math.round((returningVisitors / uniqueVisitors) * 100)}%`
+        : "0%";
+      const totalPageviews = pageviewsRes.data[0]?.count || 0;
+      const todayPageviews = todayPvRes.data[0]?.count || 0;
+      const todayVisitors = todayVisRes.data[0]?.count || 0;
+      const liveVisitors = liveVisitorsRes.data[0]?.count || 0;
+      const totalLeads = leadsRes.data[0]?.count || 0;
+      const overallConversionRate = uniqueVisitors > 0
+        ? `${((totalLeads / uniqueVisitors) * 100).toFixed(1)}%`
+        : "0.0%";
+
+      // 2. Top Channels with Lead Attributions
+      const channelsRes = await executeD1Query<{
+        source: string;
+        visitors: number;
+      }>(
+        db,
+        `SELECT source, COUNT(DISTINCT visitor_id) as visitors 
+         FROM page_views 
+         WHERE ts >= ? 
+         GROUP BY source 
+         ORDER BY visitors DESC 
+         LIMIT 8`,
+        [fromTs]
+      );
+
+      const leadsBySourceRes = await executeD1Query<{
+        source: string;
+        lead_count: number;
+      }>(
+        db,
+        "SELECT source, COUNT(*) as lead_count FROM leads GROUP BY source",
+        []
+      );
+
+      const leadSourceMap: Record<string, number> = {};
+      leadsBySourceRes.data.forEach((r) => {
+        leadSourceMap[r.source] = r.lead_count;
+      });
+
+      const topChannels: ChannelMetrics[] = channelsRes.data.map((c) => {
+        const vCount = c.visitors || 1;
+        const lCount = leadSourceMap[c.source] || 0;
+        const conv = ((lCount / vCount) * 100).toFixed(1);
+        const share = uniqueVisitors > 0 ? `${Math.round((vCount / uniqueVisitors) * 100)}%` : "0%";
+        return {
+          channel: c.source || "Direct / Organic",
+          visitors: vCount,
+          leads: lCount,
+          conversionRate: `${conv}%`,
+          share,
+        };
+      });
+
+      // 3. Top Pages
+      const pagesRes = await executeD1Query<{
+        path: string;
+        views: number;
+        unique_visitors: number;
+        avg_time: number;
+      }>(
+        db,
+        `SELECT path, COUNT(*) as views, COUNT(DISTINCT visitor_id) as unique_visitors, AVG(duration_sec) as avg_time
+         FROM page_views
+         WHERE ts >= ?
+         GROUP BY path
+         ORDER BY views DESC
+         LIMIT 8`,
+        [fromTs]
+      );
+
+      const topPages: PageMetrics[] = pagesRes.data.map((p) => ({
+        page: p.path,
+        views: p.views,
+        uniqueVisitors: p.unique_visitors,
+        avgTimeSec: Math.round(p.avg_time || 0),
+      }));
+
+      // 4. Section Engagement
+      const sectionsRes = await executeD1Query<{
+        section_id: string;
+        visitors: number;
+        avg_dwell: number;
+      }>(
+        db,
+        `SELECT section_id, COUNT(DISTINCT visitor_id) as visitors, AVG(duration_sec) as avg_dwell
+         FROM section_engagements
+         WHERE ts >= ?
+         GROUP BY section_id
+         ORDER BY avg_dwell DESC
+         LIMIT 8`,
+        [fromTs]
+      );
+
+      const sectionEngagement: SectionMetrics[] = sectionsRes.data.map((s) => ({
+        section: s.section_id,
+        visitors: s.visitors,
+        avgDwellSec: Math.round(s.avg_dwell || 0),
+      }));
+
+      // 5. Geo (Countries & Cities)
+      const [countriesRes, citiesRes] = await Promise.all([
+        executeD1Query<{ country: string; count: number }>(
+          db,
+          `SELECT country, COUNT(DISTINCT visitor_id) as count
+           FROM page_views
+           WHERE ts >= ? AND country != ''
+           GROUP BY country
+           ORDER BY count DESC
+           LIMIT 6`,
+          [fromTs]
+        ),
+        executeD1Query<{ city: string; count: number }>(
+          db,
+          `SELECT city, COUNT(DISTINCT visitor_id) as count
+           FROM page_views
+           WHERE ts >= ? AND city != ''
+           GROUP BY city
+           ORDER BY count DESC
+           LIMIT 6`,
+          [fromTs]
+        ),
+      ]);
+
+      const topCountries: GeoMetrics[] = countriesRes.data.map((c) => ({
+        name: c.country === "IN" ? "India (IN)" : c.country,
+        visitors: c.count,
+        percentage: uniqueVisitors > 0 ? Math.round((c.count / uniqueVisitors) * 100) : 0,
+      }));
+
+      const topCities: GeoMetrics[] = citiesRes.data.map((c) => ({
+        name: c.city || "Unknown City",
+        visitors: c.count,
+        percentage: uniqueVisitors > 0 ? Math.round((c.count / uniqueVisitors) * 100) : 0,
+      }));
+
+      // 6. Devices & Browsers
+      const [devicesRes, browsersRes] = await Promise.all([
+        executeD1Query<{ device: string; count: number }>(
+          db,
+          `SELECT device, COUNT(DISTINCT visitor_id) as count
+           FROM page_views
+           WHERE ts >= ?
+           GROUP BY device
+           ORDER BY count DESC`,
+          [fromTs]
+        ),
+        executeD1Query<{ browser: string; count: number }>(
+          db,
+          `SELECT browser, COUNT(DISTINCT visitor_id) as count
+           FROM page_views
+           WHERE ts >= ?
+           GROUP BY browser
+           ORDER BY count DESC`,
+          [fromTs]
+        ),
+      ]);
+
+      const deviceBreakdown: DeviceMetrics[] = devicesRes.data.map((d) => ({
+        name: d.device || "Desktop",
+        count: d.count,
+        percentage: uniqueVisitors > 0 ? Math.round((d.count / uniqueVisitors) * 100) : 0,
+      }));
+
+      const browserBreakdown: DeviceMetrics[] = browsersRes.data.map((b) => ({
+        name: b.browser || "Other",
+        count: b.count,
+        percentage: uniqueVisitors > 0 ? Math.round((b.count / uniqueVisitors) * 100) : 0,
+      }));
+
+      // 7. Historical Traffic Series (7D, 30D, 1Y)
+      const trafficSeries = await buildTrafficSeries(db, range, totalLeads);
+
+      return {
+        range,
+        overview: {
+          uniqueVisitors,
+          newVisitors,
+          returningVisitors,
+          returningRate,
+          liveVisitors,
+          totalPageviews,
+          todayVisitors,
+          todayPageviews,
+          totalLeads,
+          overallConversionRate,
+        },
+        trafficSeries,
+        topChannels,
+        topReferrers: [],
+        topCampaigns: [],
+        topPages,
+        sectionEngagement,
+        topCountries,
+        topCities,
+        deviceBreakdown,
+        browserBreakdown,
+      };
+    } catch (d1Err) {
+      console.error("[AnalyticsStore] D1 summary aggregation failed:", d1Err);
     }
   }
 
-  // 30-day (weekly buckets)
-  const traffic30d: TrafficDay[] = [
-    { date: "Week 1", visitors: 0, pageviews: 0, leads: 0 },
-    { date: "Week 2", visitors: 0, pageviews: 0, leads: 0 },
-    { date: "Week 3", visitors: 0, pageviews: 0, leads: 0 },
-    { date: "Week 4", visitors: 0, pageviews: 0, leads: 0 },
-  ];
+  // Fallback for empty/dev environment
+  return buildEmptyDevSummary(range);
+}
 
-  edgePageViews.forEach((e) => {
-    const weeksAgo = Math.floor((Date.now() - e.ts) / (7 * 24 * 60 * 60 * 1000));
-    const idx = 3 - Math.min(weeksAgo, 3);
-    traffic30d[idx].pageviews++;
-    // unique visitors approximation
-    traffic30d[idx].visitors = Math.ceil(traffic30d[idx].pageviews * 0.7);
-  });
+// ── Build Traffic Series with Discrete Date Buckets ────────────────────────────
+async function buildTrafficSeries(
+  db: D1Database,
+  range: "7d" | "30d" | "1y",
+  totalLeads: number
+): Promise<TrafficDataPoint[]> {
+  const buckets: TrafficDataPoint[] = [];
+  const daysCount = range === "7d" ? 7 : range === "30d" ? 30 : 12;
+
+  if (range === "1y") {
+    // 12 monthly buckets
+    for (let m = 11; m >= 0; m--) {
+      const start = new Date();
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+      start.setMonth(start.getMonth() - m);
+
+      const end = new Date(start);
+      end.setMonth(end.getMonth() + 1);
+
+      const res = await executeD1Query<{ visitors: number; pageviews: number }>(
+        db,
+        "SELECT COUNT(DISTINCT visitor_id) as visitors, COUNT(*) as pageviews FROM page_views WHERE ts >= ? AND ts < ?",
+        [start.getTime(), end.getTime()]
+      );
+
+      const row = res.data[0] || { visitors: 0, pageviews: 0 };
+      buckets.push({
+        date: start.toLocaleDateString("en-US", { month: "short" }),
+        visitors: row.visitors,
+        pageviews: row.pageviews,
+        leads: 0,
+      });
+    }
+  } else {
+    // Daily buckets
+    for (let d = daysCount - 1; d >= 0; d--) {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      start.setDate(start.getDate() - d);
+
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+
+      const res = await executeD1Query<{ visitors: number; pageviews: number }>(
+        db,
+        "SELECT COUNT(DISTINCT visitor_id) as visitors, COUNT(*) as pageviews FROM page_views WHERE ts >= ? AND ts < ?",
+        [start.getTime(), end.getTime()]
+      );
+
+      const row = res.data[0] || { visitors: 0, pageviews: 0 };
+      const label = d === 0 ? "Today" : start.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+      buckets.push({
+        date: label,
+        visitors: row.visitors,
+        pageviews: row.pageviews,
+        leads: 0,
+      });
+    }
+  }
+
+  // Populate leads in current bucket
+  if (totalLeads > 0 && buckets.length > 0) {
+    buckets[buckets.length - 1].leads = totalLeads;
+  }
+
+  return buckets;
+}
+
+// ── Empty / Zero Dev Baseline ──────────────────────────────────────────────────
+function buildEmptyDevSummary(range: "7d" | "30d" | "1y"): AdminAnalyticsData {
+  const points: TrafficDataPoint[] = [];
+  const count = range === "7d" ? 7 : range === "30d" ? 30 : 12;
+
+  for (let i = count - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const label = i === 0 ? "Today" : d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    points.push({ date: label, visitors: 0, pageviews: 0, leads: 0 });
+  }
 
   return {
-    totalPageviews: edgePageViews.length,
-    uniqueVisitors,
-    todayPageviews: todayViews.length,
-    todayVisitors,
-    topPages,
-    topReferrers,
-    deviceBreakdown,
-    countryBreakdown,
-    traffic7d,
-    traffic30d,
+    range,
+    overview: {
+      uniqueVisitors: 0,
+      newVisitors: 0,
+      returningVisitors: 0,
+      returningRate: "0%",
+      liveVisitors: 0,
+      totalPageviews: 0,
+      todayVisitors: 0,
+      todayPageviews: 0,
+      totalLeads: 0,
+      overallConversionRate: "0.0%",
+    },
+    trafficSeries: points,
+    topChannels: [],
+    topReferrers: [],
+    topCampaigns: [],
+    topPages: [],
+    sectionEngagement: [],
+    topCountries: [],
+    topCities: [],
+    deviceBreakdown: [],
+    browserBreakdown: [],
   };
 }

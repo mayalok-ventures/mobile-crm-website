@@ -1,18 +1,23 @@
 /**
  * POST /api/analytics
  *
- * Lightweight real-time visitor tracking beacon.
- * Called from the client on every page view with a tiny JSON payload.
+ * Production First-Party Telemetry Ingestion Endpoint.
+ * Ingests:
+ * - Page views (with UTM attribution & entry flag)
+ * - Time on page & exit duration
+ * - Section engagement (IntersectionObserver dwell time)
+ * - Live visitor heartbeats (every 25s)
  *
- * Stores events in Cloudflare D1 (production) or edge memory (dev).
- *
- * Rate limit: 60 pings per visitor per hour to prevent abuse.
- * No cookies, no third-party scripts — all first-party, GDPR-compatible.
+ * Privacy & GDPR:
+ * - Zero third-party scripts.
+ * - Anonymous visitor UUID stored only in visitor's localStorage.
+ * - IP addresses are NOT stored in analytics tables.
+ * - Coarse geo derived from Cloudflare Edge metadata headers.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { checkRateLimit } from "@/lib/security";
-import { savePageView, PageViewEvent } from "@/lib/analytics-store";
+import { checkRateLimit, sanitizeString } from "@/lib/security";
+import { recordAnalyticsEvent, IngestEvent } from "@/lib/analytics-store";
 import { getD1Database } from "@/lib/cloudflare-context";
 
 export const runtime = "edge";
@@ -40,13 +45,13 @@ function detectBrowser(ua: string): string {
   return "Other";
 }
 
-/** One-way hash a string — no personal data stored */
-async function hashVisitorId(raw: string): Promise<string> {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("")
-    .slice(0, 16); // 8 bytes = enough for uniqueness, not enough to identify
+function detectOS(ua: string): string {
+  if (/Windows/i.test(ua)) return "Windows";
+  if (/Macintosh|Mac OS X/i.test(ua)) return "macOS";
+  if (/Android/i.test(ua)) return "Android";
+  if (/iPhone|iPad|iPod/i.test(ua)) return "iOS";
+  if (/Linux/i.test(ua)) return "Linux";
+  return "Other";
 }
 
 export async function POST(req: NextRequest) {
@@ -56,56 +61,70 @@ export async function POST(req: NextRequest) {
     const cfCountry = req.headers.get("cf-ipcountry") || "";
     const cfCity = req.headers.get("cf-ipcity") || "";
 
-    // Skip bots
-    if (/bot|crawl|spider|slurp|facebookexternalhit|Twitterbot/i.test(ua)) {
-      return NextResponse.json({ ok: true });
+    // 1. Bot Filter
+    if (/bot|crawl|spider|slurp|facebookexternalhit|Twitterbot|BingPreview|Googlebot/i.test(ua)) {
+      return NextResponse.json({ ok: true, filtered: true });
     }
 
-    // Rate limit per visitor IP: 60 pageviews / hour
+    // 2. Sliding Window Rate Limit (120 pings / hour per IP)
     const isLocalDev = process.env.NODE_ENV === "development";
     if (!isLocalDev) {
-      const rateCheck = checkRateLimit(`analytics_${ip}`, 60, 60 * 60 * 1000);
+      const rateCheck = checkRateLimit(`analytics_${ip}`, 120, 60 * 60 * 1000);
       if (!rateCheck.allowed) {
-        return NextResponse.json({ ok: true }); // Silent accept to avoid breaking beacon
+        return NextResponse.json({ ok: true, rateLimited: true });
       }
     }
 
+    // 3. Parse and Validate Payload
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-    const page = typeof body.page === "string" ? body.page.slice(0, 200) : "/";
-    const referrer = typeof body.referrer === "string" ? body.referrer.slice(0, 300) : "";
-    const visitorSeed = typeof body.vid === "string" ? body.vid : ip;
-    const sessionSeed = typeof body.sid === "string" ? body.sid : `${ip}:${Date.now()}`;
 
-    const [visitor_hash, session_hash] = await Promise.all([
-      hashVisitorId(visitorSeed),
-      hashVisitorId(sessionSeed),
-    ]);
+    const type = typeof body.type === "string" ? body.type : "pageview";
+    const visitorId = sanitizeString(body.vid, 64) || `v_anon_${Date.now().toString(36)}`;
+    const sessionId = sanitizeString(body.sid, 64) || `s_anon_${Date.now().toString(36)}`;
+    const path = sanitizeString(body.page || body.path || "/", 200);
 
-    const event: PageViewEvent = {
-      id: `pv_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`,
-      page,
-      referrer,
+    // Skip admin pages from public visitor analytics
+    if (path.startsWith("/admin") || path.startsWith("/api/admin")) {
+      return NextResponse.json({ ok: true, skipped: true });
+    }
+
+    const event: IngestEvent = {
+      type: (["pageview", "page_duration", "section_engagement", "heartbeat"].includes(type)
+        ? type
+        : "pageview") as IngestEvent["type"],
+      visitorId,
+      sessionId,
+      path,
+      title: sanitizeString(body.title, 120),
+      referrer: sanitizeString(body.referrer, 300),
+      source: sanitizeString(body.utm_source, 60),
+      medium: sanitizeString(body.utm_medium, 60),
+      campaign: sanitizeString(body.utm_campaign, 80),
+      term: sanitizeString(body.utm_term, 80),
+      content: sanitizeString(body.utm_content, 80),
+      landingPage: sanitizeString(body.landing_page, 200),
+      durationSec: typeof body.duration === "number" ? Math.round(body.duration) : undefined,
+      sectionId: sanitizeString(body.sectionId, 50),
+      isEntry: Boolean(body.isEntry),
+      isExit: Boolean(body.isExit),
       country: cfCountry,
       city: cfCity,
       device: detectDevice(ua),
       browser: detectBrowser(ua),
-      visitor_hash,
-      session_hash,
+      os: detectOS(ua),
       ts: Date.now(),
-      created_at: new Date().toISOString(),
     };
 
     const db = getD1Database();
-    await savePageView(event, db);
+    await recordAnalyticsEvent(event, db);
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("[/api/analytics] Error:", err);
-    return NextResponse.json({ ok: true }); // Always return 200 to not break beacon
+    console.error("[POST /api/analytics Error]:", err);
+    return NextResponse.json({ ok: true }); // Always 200 to keep beacon non-blocking
   }
 }
 
-// Health check
 export async function GET() {
   return NextResponse.json({ ok: true, service: "analytics-beacon" });
 }
