@@ -64,13 +64,18 @@ export function TrafficAreaChart({ data }: { data: TrafficPoint[] }) {
   );
 }
 
-export function SectionEngagementBarChart({ data }: { data: SectionPoint[] }) {
+interface PageViewPoint {
+  section: string;
+  views: number;
+}
+
+export function SectionEngagementBarChart({ data }: { data: PageViewPoint[] }) {
   return (
     <div className="h-60 w-full pt-1">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} layout="vertical" margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" horizontal={false} />
-          <XAxis type="number" stroke="#94a3b8" fontSize={10} />
+          <XAxis type="number" stroke="#94a3b8" fontSize={10} allowDecimals={false} />
           <YAxis type="category" dataKey="section" stroke="#64748b" fontSize={10} width={90} tickLine={false} />
           <Tooltip
             contentStyle={{
@@ -80,9 +85,10 @@ export function SectionEngagementBarChart({ data }: { data: SectionPoint[] }) {
               fontSize: "11px",
             }}
           />
-          <Bar dataKey="avgTimeSec" name="Avg Secs" fill="#0f172a" radius={[0, 6, 6, 0]} />
+          <Bar dataKey="views" name="Page Views" fill="#0077ff" radius={[0, 6, 6, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
   );
 }
+

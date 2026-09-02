@@ -34,3 +34,24 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 
 CREATE INDEX IF NOT EXISTS idx_audit_logs_event ON audit_logs(event_type);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
+
+-- 3. Real Visitor Analytics — Page View Events
+CREATE TABLE IF NOT EXISTS page_views (
+    id TEXT PRIMARY KEY,
+    page TEXT NOT NULL,
+    referrer TEXT DEFAULT '',
+    country TEXT DEFAULT '',
+    city TEXT DEFAULT '',
+    device TEXT DEFAULT 'Desktop',
+    browser TEXT DEFAULT 'Other',
+    visitor_hash TEXT NOT NULL,    -- anonymised SHA-256 prefix (16 hex chars)
+    session_hash TEXT NOT NULL,    -- per-tab session identifier
+    ts INTEGER NOT NULL,           -- Unix timestamp ms (for fast range queries)
+    created_at TEXT NOT NULL       -- ISO-8601 string
+);
+
+CREATE INDEX IF NOT EXISTS idx_pv_ts ON page_views(ts);
+CREATE INDEX IF NOT EXISTS idx_pv_visitor ON page_views(visitor_hash);
+CREATE INDEX IF NOT EXISTS idx_pv_page ON page_views(page);
+CREATE INDEX IF NOT EXISTS idx_pv_country ON page_views(country);
+

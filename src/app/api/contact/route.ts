@@ -9,28 +9,32 @@ import {
   getAllLeads,
   saveLead,
   clearLeads,
+  updateLeadStatus,
   StoredLead,
 } from "@/lib/leads-store";
+import { getD1Database } from "@/lib/cloudflare-context";
 
 export const runtime = "edge";
 
 const duplicateSubmissionSet = new Set<string>();
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 mins
-const MAX_REQUESTS_PER_WINDOW = 30; // Generous window
+const MAX_REQUESTS_PER_WINDOW = 30;
 const MIN_SUBMISSION_TIME_MS = 500; // 0.5s bot deterrence
 
 function getClientIp(req: NextRequest): string {
   const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) {
-    return forwarded.split(",")[0].trim();
-  }
+  if (forwarded) return forwarded.split(",")[0].trim();
   const realIp = req.headers.get("x-real-ip");
   if (realIp) return realIp.trim();
   return "127.0.0.1";
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/contact  — Fetch all leads (admin dashboard)
+// ─────────────────────────────────────────────────────────────────────────────
 export async function GET() {
-  const leads = await getAllLeads();
+  const db = getD1Database();
+  const leads = await getAllLeads(db);
   return NextResponse.json({
     success: true,
     count: leads.length,
@@ -38,14 +42,75 @@ export async function GET() {
   });
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PATCH /api/contact  — Update lead status (C1 fix)
+// Body: { id: string, status: "New" | "Contacted" | "Qualified" | "In Pipeline" }
+// ─────────────────────────────────────────────────────────────────────────────
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+    const leadId = typeof body.id === "string" ? body.id.trim() : "";
+    const status = body.status as StoredLead["status"];
+
+    const VALID_STATUSES: StoredLead["status"][] = [
+      "New",
+      "Contacted",
+      "Qualified",
+      "In Pipeline",
+    ];
+
+    if (!leadId) {
+      return NextResponse.json(
+        { success: false, error: "Lead ID is required." },
+        { status: 400 }
+      );
+    }
+
+    if (!VALID_STATUSES.includes(status)) {
+      return NextResponse.json(
+        { success: false, error: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}` },
+        { status: 400 }
+      );
+    }
+
+    const db = getD1Database();
+    const result = await updateLeadStatus(leadId, status, db);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error || "Status update failed." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Lead ${leadId} status updated to "${status}".`,
+    });
+  } catch (err) {
+    console.error("[PATCH /api/contact] Error:", err);
+    return NextResponse.json(
+      { success: false, error: "Unexpected error updating lead status." },
+      { status: 500 }
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DELETE /api/contact  — Clear all leads (admin purge)
+// ─────────────────────────────────────────────────────────────────────────────
 export async function DELETE() {
-  await clearLeads();
+  const db = getD1Database();
+  await clearLeads(db);
   return NextResponse.json({
     success: true,
     message: "All leads cleared successfully.",
   });
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/contact  — Submit a new contact/lead form (C2 fix: D1 wired)
+// ─────────────────────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
     const clientIp = getClientIp(req);
@@ -56,7 +121,7 @@ export async function POST(req: NextRequest) {
       clientIp === "::1" ||
       clientIp === "localhost";
 
-    // 1. Rate Limiting Check (Relaxed on localhost for smooth developer testing)
+    // 1. Rate Limiting (relaxed on localhost)
     if (!isLocalDev) {
       const rateCheck = checkRateLimit(
         `contact_ip_${clientIp}`,
@@ -67,17 +132,18 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: "Too many submissions from this connection. Please wait a few minutes before trying again.",
+            error:
+              "Too many submissions from this connection. Please wait a few minutes before trying again.",
           },
           { status: 429 }
         );
       }
     }
 
-    // 2. Parse and Validate Payload Type
+    // 2. Parse Payload
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
 
-    // 3. Honeypot check (hidden field bots usually fill)
+    // 3. Honeypot check
     if (body._hp && typeof body._hp === "string" && body._hp.trim().length > 0) {
       return NextResponse.json({
         success: true,
@@ -86,7 +152,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 4. Minimum submission duration check (only if _ts is passed)
+    // 4. Min submission time check
     if (body._ts && typeof body._ts === "number") {
       const elapsed = now - body._ts;
       if (elapsed < MIN_SUBMISSION_TIME_MS) {
@@ -100,7 +166,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5. Server-side Strict Input Sanitization
+    // 5. Server-side Input Sanitization
     const name = sanitizeString(body.name, 100);
     const { valid: isEmailValid, email } = sanitizeEmail(body.email);
     const { valid: isPhoneValid, phone } = sanitizePhone(body.phone);
@@ -115,14 +181,12 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-
     if (!isEmailValid) {
       return NextResponse.json(
         { success: false, error: "Please provide a valid corporate or professional email address." },
         { status: 400 }
       );
     }
-
     if (!isPhoneValid) {
       return NextResponse.json(
         { success: false, error: "Please provide a valid phone or WhatsApp number (7 to 16 digits)." },
@@ -130,7 +194,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 6. Deduplication Check (same email within 2 minutes)
+    // 6. Deduplication (same email within 2 minutes)
     const dedupeKey = `${email}:${Math.floor(now / 120000)}`;
     if (duplicateSubmissionSet.has(dedupeKey)) {
       return NextResponse.json(
@@ -147,7 +211,7 @@ export async function POST(req: NextRequest) {
 
     const requestId = `req_sy_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`;
 
-    // 7. Canonical Stored Lead Record (Persisted to disk and D1)
+    // 7. Build Canonical Lead Record
     const storedLead: StoredLead = {
       id: `lead_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`,
       requestId,
@@ -163,26 +227,20 @@ export async function POST(req: NextRequest) {
       ip: clientIp,
     };
 
-    await saveLead(storedLead);
+    // 8. Persist to D1 + edge memory (C2: D1 binding now wired)
+    const db = getD1Database();
+    await saveLead(storedLead, db);
 
-    // 8. Canonical Sahyak CRM Lead Payload
+    // 9. CRM Canonical Payload
     const crmPayload = {
       source: "WEBSITE",
       sourceType: "CONTACT_FORM",
       requestId,
       submittedAt: storedLead.submittedAt,
-      lead: {
-        name,
-        email,
-        phone,
-        company,
-        teamSize,
-        requirement,
-        inquiryType,
-      },
+      lead: { name, email, phone, company, teamSize, requirement, inquiryType },
     };
 
-    // 9. Dispatch to Server-Side CRM Webhook if configured
+    // 10. Dispatch to server-side CRM webhook if configured
     const crmWebhookUrl = process.env.CRM_WEBHOOK_URL;
     const crmApiKey = process.env.CRM_API_KEY;
 
@@ -190,7 +248,6 @@ export async function POST(req: NextRequest) {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 6000);
-
         const response = await fetch(crmWebhookUrl, {
           method: "POST",
           headers: {
@@ -201,22 +258,15 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify(crmPayload),
           signal: controller.signal,
         });
-
         clearTimeout(timeoutId);
-
         if (!response.ok) {
-          console.error(`CRM Webhook returned status ${response.status} for ${requestId}`);
+          console.error(`CRM Webhook returned ${response.status} for ${requestId}`);
         }
       } catch (webhookErr) {
         console.error("CRM Webhook dispatch failed:", webhookErr);
       }
     } else {
-      console.log(`[Sahyak CRM] Hardened Lead Captured [${requestId}]:`, {
-        name,
-        email,
-        company,
-        inquiryType,
-      });
+      console.log(`[Sahyak CRM] Lead Captured [${requestId}]:`, { name, email, company, inquiryType });
     }
 
     return NextResponse.json({

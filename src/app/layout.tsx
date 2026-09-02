@@ -3,6 +3,7 @@ import { Outfit, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { GlobalNavbar } from "@/components/GlobalNavbar";
 import { GlobalFooter } from "@/components/GlobalFooter";
 import { PageTransition } from "@/components/PageTransition";
+import { AnalyticsBeacon } from "@/components/AnalyticsBeacon";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -236,6 +237,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-[#FAFAFA] text-slate-900 flex flex-col font-sans selection:bg-slate-900 selection:text-white overflow-x-clip max-w-full">
+        <AnalyticsBeacon />
         <GlobalNavbar />
         <main className="flex-1 flex flex-col w-full overflow-x-clip max-w-full">
           <PageTransition>{children}</PageTransition>

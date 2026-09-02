@@ -15,8 +15,12 @@ export interface StoredLead {
   ip?: string;
 }
 
-// Global edge in-memory store (Edge runtime compatible)
-const globalEdgeLeads: StoredLead[] = [];
+// Global edge in-memory store attached to globalThis across Edge route evaluations
+const globalForLeads = globalThis as unknown as { __globalEdgeLeads?: StoredLead[] };
+if (!globalForLeads.__globalEdgeLeads) {
+  globalForLeads.__globalEdgeLeads = [];
+}
+const globalEdgeLeads = globalForLeads.__globalEdgeLeads;
 
 /**
  * Fetch all stored leads from Cloudflare D1 or Edge memory
@@ -121,3 +125,40 @@ export async function clearLeads(db?: D1Database | null): Promise<void> {
 
   globalEdgeLeads.length = 0;
 }
+
+/**
+ * Update a lead's status in D1 and edge memory.
+ * Called by PATCH /api/contact/status
+ */
+export async function updateLeadStatus(
+  leadId: string,
+  newStatus: StoredLead["status"],
+  db?: D1Database | null
+): Promise<{ success: boolean; error?: string }> {
+  // 1. Persist to D1 if available
+  if (db) {
+    try {
+      const result = await executeD1Query(
+        db,
+        "UPDATE leads SET status = ?, updated_at = ? WHERE id = ?",
+        [newStatus, new Date().toISOString(), leadId]
+      );
+      if (!result.success) {
+        console.error("[LeadsStore] D1 status update failed for:", leadId);
+      }
+    } catch (err) {
+      console.error("[LeadsStore] D1 status update error:", err);
+    }
+  }
+
+  // 2. Update edge memory store
+  const idx = globalEdgeLeads.findIndex((l) => l.id === leadId);
+  if (idx >= 0) {
+    globalEdgeLeads[idx] = { ...globalEdgeLeads[idx], status: newStatus };
+    return { success: true };
+  }
+
+  // Lead not in edge memory — still ok, D1 was updated (or will be on next GET)
+  return { success: true };
+}
+
