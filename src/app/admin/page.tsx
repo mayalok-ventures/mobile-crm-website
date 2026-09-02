@@ -27,10 +27,11 @@ import {
   Phone,
   Unlock,
   Menu,
-  Sparkles,
   Inbox,
   Layers,
   Compass,
+  FileSpreadsheet,
+  FileCode,
 } from "lucide-react";
 import { AdminAnalyticsData } from "@/lib/analytics-store";
 
@@ -95,11 +96,14 @@ const INITIAL_ANALYTICS: AdminAnalyticsData = {
     totalPageviews: 0,
     todayVisitors: 0,
     todayPageviews: 0,
+    avgTimeOnPageSec: 0,
     totalLeads: 0,
     overallConversionRate: "0.0%",
   },
   trafficSeries: [],
   topChannels: [],
+  utmBreakdown: [],
+  referrerBreakdown: [],
   topReferrers: [],
   topCampaigns: [],
   topPages: [],
@@ -108,6 +112,8 @@ const INITIAL_ANALYTICS: AdminAnalyticsData = {
   topCities: [],
   deviceBreakdown: [],
   browserBreakdown: [],
+  osBreakdown: [],
+  conversionAttribution: [],
 };
 
 export default function AdminDashboardPage() {
@@ -123,6 +129,9 @@ export default function AdminDashboardPage() {
 
   // Date Range Filter State
   const [dateRange, setDateRange] = useState<"7d" | "30d" | "1y">("7d");
+
+  // Export State
+  const [isExporting, setIsExporting] = useState<"csv" | "json" | null>(null);
 
   // Leads Data State
   const [leads, setLeads] = useState<LeadSubmission[]>([]);
@@ -249,6 +258,39 @@ export default function AdminDashboardPage() {
     fetchAnalytics(range);
   };
 
+  // ── Export Analytics Telemetry (CSV / JSON) ──────────────────────────────────
+  const handleExportAnalytics = async (format: "csv" | "json") => {
+    if (isExporting) return;
+    setIsExporting(format);
+
+    try {
+      const res = await fetch(`/api/admin/analytics/export?range=${dateRange}&format=${format}`);
+      if (!res.ok) {
+        showToast(`Export failed (${res.status}). Try again.`);
+        return;
+      }
+
+      const blob = await res.blob();
+      const dateStr = new Date().toISOString().split("T")[0];
+      const filename = `sahyak-analytics-${dateRange}-${dateStr}.${format}`;
+
+      const blobUrl = window.URL.createObjectURL(blob);
+      const downloadLink = document.createElement("a");
+      downloadLink.href = blobUrl;
+      downloadLink.download = filename;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      window.URL.revokeObjectURL(blobUrl);
+
+      showToast(`Analytics ${format.toUpperCase()} (${dateRange.toUpperCase()}) exported successfully`);
+    } catch {
+      showToast(`Export error for ${format.toUpperCase()}`);
+    } finally {
+      setIsExporting(null);
+    }
+  };
+
   // ── Login Handler ────────────────────────────────────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -324,8 +366,8 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // ── Export CSV Handler ───────────────────────────────────────────────────────
-  const exportCSV = () => {
+  // ── Export Leads CSV Handler ─────────────────────────────────────────────────
+  const exportLeadsCSV = () => {
     if (leads.length === 0) return;
     const headers = ["ID", "Date", "Name", "Email", "Phone", "Company", "Team Size", "Source", "Campaign", "Status", "Requirement"];
     const rows = leads.map((l) => [
@@ -349,7 +391,7 @@ export default function AdminDashboardPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast("CSV export initiated");
+    showToast("Leads CSV export initiated");
   };
 
   // ── Filter & Search Leads ────────────────────────────────────────────────────
@@ -518,6 +560,30 @@ export default function AdminDashboardPage() {
             <Shield className="w-4 h-4" />
             <span>D1 Vault &amp; Infra</span>
           </button>
+
+          {/* Mobile Export Group */}
+          <div className="pt-2 border-t border-slate-100 space-y-1">
+            <span className="text-[10px] font-mono font-bold uppercase text-slate-400 px-2 block">Export Analytics</span>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => handleExportAnalytics("csv")}
+                disabled={isExporting !== null}
+                className="py-2 px-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-bold font-mono flex items-center justify-center gap-1.5"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-slate-600" />
+                <span>CSV</span>
+              </button>
+              <button
+                onClick={() => handleExportAnalytics("json")}
+                disabled={isExporting !== null}
+                className="py-2 px-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-bold font-mono flex items-center justify-center gap-1.5"
+              >
+                <FileCode className="w-3.5 h-3.5 text-slate-600" />
+                <span>JSON</span>
+              </button>
+            </div>
+          </div>
+
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-rose-700 hover:bg-rose-50 text-left pt-3 border-t border-slate-100"
@@ -634,26 +700,50 @@ export default function AdminDashboardPage() {
             </h2>
           </div>
 
-          {/* Date Range Selector */}
-          <div className="flex items-center gap-2.5">
+          {/* Controls: Date Range & Export Analytics */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {/* Date Range Selector */}
             <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold">
               <button
                 onClick={() => handleDateRangeChange("7d")}
-                className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${dateRange === "7d" ? "bg-white text-slate-900 shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
+                className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${dateRange === "7d" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900"}`}
               >
                 7 Days
               </button>
               <button
                 onClick={() => handleDateRangeChange("30d")}
-                className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${dateRange === "30d" ? "bg-white text-slate-900 shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
+                className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${dateRange === "30d" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900"}`}
               >
                 30 Days
               </button>
               <button
                 onClick={() => handleDateRangeChange("1y")}
-                className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${dateRange === "1y" ? "bg-white text-slate-900 shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
+                className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${dateRange === "1y" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900"}`}
               >
                 1 Year
+              </button>
+            </div>
+
+            {/* Dedicated Export Analytics Buttons */}
+            <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold items-center">
+              <span className="px-2 text-slate-500 font-mono text-[10px] uppercase font-bold hidden lg:inline">Export:</span>
+              <button
+                onClick={() => handleExportAnalytics("csv")}
+                disabled={isExporting !== null}
+                className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-50 text-slate-900 shadow-2xs font-mono font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50 transition-all"
+                title="Download structured business CSV report"
+              >
+                <Download className="w-3 h-3 text-slate-600" />
+                <span>{isExporting === "csv" ? "..." : "CSV"}</span>
+              </button>
+              <button
+                onClick={() => handleExportAnalytics("json")}
+                disabled={isExporting !== null}
+                className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-50 text-slate-900 shadow-2xs font-mono font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50 transition-all ml-1"
+                title="Download machine-readable JSON report"
+              >
+                <Download className="w-3 h-3 text-slate-600" />
+                <span>{isExporting === "json" ? "..." : "JSON"}</span>
               </button>
             </div>
 
@@ -728,7 +818,7 @@ export default function AdminDashboardPage() {
                 {analytics.overview.totalPageviews}
               </div>
               <div className="text-xs text-slate-500 font-mono">
-                <span>{analytics.overview.todayPageviews} views today</span>
+                <span>{analytics.overview.todayPageviews} views today &bull; {analytics.overview.avgTimeOnPageSec}s avg dwell</span>
               </div>
             </div>
           </section>
@@ -1004,11 +1094,11 @@ export default function AdminDashboardPage() {
                   )}
 
                   <button
-                    onClick={exportCSV}
+                    onClick={exportLeadsCSV}
                     className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold font-heading transition-all shadow-xs cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    <span>Export</span>
+                    <span>Export Leads</span>
                   </button>
                 </div>
               </div>
@@ -1280,6 +1370,10 @@ export default function AdminDashboardPage() {
                   <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 space-y-1">
                     <div className="font-bold font-heading">Parameterized SQL Enforcement</div>
                     <div className="text-[11px] text-blue-700">All queries execute via D1 .bind() statements.</div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 space-y-1">
+                    <div className="font-bold font-heading">Export Sanitization &amp; Protection</div>
+                    <div className="text-[11px] text-slate-600">Automated CSV formula injection prevention and MIME attachment headers.</div>
                   </div>
                 </div>
               </div>

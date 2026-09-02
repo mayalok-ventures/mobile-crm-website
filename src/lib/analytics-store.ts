@@ -47,6 +47,24 @@ export interface ChannelMetrics {
   share: string;
 }
 
+export interface UtmMetrics {
+  source: string;
+  medium: string;
+  campaign: string;
+  content: string;
+  term: string;
+  visitors: number;
+  leads: number;
+  conversionRate: string;
+}
+
+export interface ReferrerMetrics {
+  referrer: string;
+  visitors: number;
+  pageviews: number;
+  leads: number;
+}
+
 export interface PageMetrics {
   page: string;
   views: number;
@@ -72,6 +90,15 @@ export interface DeviceMetrics {
   percentage: number;
 }
 
+export interface ConversionAttributionMetrics {
+  source: string;
+  visitors: number;
+  totalLeads: number;
+  qualifiedLeads: number;
+  inPipelineLeads: number;
+  conversionRate: string;
+}
+
 export interface AdminAnalyticsData {
   range: "7d" | "30d" | "1y";
   overview: {
@@ -83,11 +110,14 @@ export interface AdminAnalyticsData {
     totalPageviews: number;
     todayVisitors: number;
     todayPageviews: number;
+    avgTimeOnPageSec: number;
     totalLeads: number;
     overallConversionRate: string;
   };
   trafficSeries: TrafficDataPoint[];
   topChannels: ChannelMetrics[];
+  utmBreakdown: UtmMetrics[];
+  referrerBreakdown: ReferrerMetrics[];
   topReferrers: { referrer: string; count: number }[];
   topCampaigns: { campaign: string; visitors: number; leads: number }[];
   topPages: PageMetrics[];
@@ -96,6 +126,8 @@ export interface AdminAnalyticsData {
   topCities: GeoMetrics[];
   deviceBreakdown: DeviceMetrics[];
   browserBreakdown: DeviceMetrics[];
+  osBreakdown: DeviceMetrics[];
+  conversionAttribution: ConversionAttributionMetrics[];
 }
 
 // ── In-Memory Ring Buffer for Local Dev ─────────────────────────────────────────
@@ -224,8 +256,7 @@ export async function recordAnalyticsEvent(event: IngestEvent, db?: D1Database |
           ]
         );
       } else if (event.type === "page_duration") {
-        const sec = Math.min(Math.max(event.durationSec || 0, 1), 7200); // 1s to 2 hours
-        // Update pageview duration
+        const sec = Math.min(Math.max(event.durationSec || 0, 1), 7200);
         await executeD1Run(
           db,
           `UPDATE page_views SET duration_sec = duration_sec + ?, is_exit = ?
@@ -235,7 +266,6 @@ export async function recordAnalyticsEvent(event: IngestEvent, db?: D1Database |
           [sec, event.isExit ? 1 : 0, event.sessionId, event.path, event.sessionId, event.path]
         );
 
-        // Update session duration
         await executeD1Run(
           db,
           `UPDATE sessions SET duration_sec = duration_sec + ?, last_active = ? WHERE session_id = ?`,
@@ -321,6 +351,7 @@ export async function getAdminAnalyticsSummary(
         todayPvRes,
         todayVisRes,
         liveVisitorsRes,
+        avgTimeRes,
         leadsRes,
       ] = await Promise.all([
         executeD1Query<{ count: number }>(
@@ -353,6 +384,11 @@ export async function getAdminAnalyticsSummary(
           "SELECT COUNT(DISTINCT session_id) as count FROM live_visitors WHERE last_seen >= ?",
           [liveThresholdTs]
         ),
+        executeD1Query<{ avg_sec: number }>(
+          db,
+          "SELECT AVG(duration_sec) as avg_sec FROM page_views WHERE ts >= ? AND duration_sec > 0",
+          [fromTs]
+        ),
         executeD1Query<{ count: number }>(
           db,
           "SELECT COUNT(*) as count FROM leads",
@@ -370,6 +406,7 @@ export async function getAdminAnalyticsSummary(
       const todayPageviews = todayPvRes.data[0]?.count || 0;
       const todayVisitors = todayVisRes.data[0]?.count || 0;
       const liveVisitors = liveVisitorsRes.data[0]?.count || 0;
+      const avgTimeOnPageSec = Math.round(avgTimeRes.data[0]?.avg_sec || 0);
       const totalLeads = leadsRes.data[0]?.count || 0;
       const overallConversionRate = uniqueVisitors > 0
         ? `${((totalLeads / uniqueVisitors) * 100).toFixed(1)}%`
@@ -386,35 +423,60 @@ export async function getAdminAnalyticsSummary(
          WHERE ts >= ? 
          GROUP BY source 
          ORDER BY visitors DESC 
-         LIMIT 8`,
+         LIMIT 10`,
         [fromTs]
       );
 
       const leadsBySourceRes = await executeD1Query<{
         source: string;
         lead_count: number;
+        qualified_count: number;
+        pipeline_count: number;
       }>(
         db,
-        "SELECT source, COUNT(*) as lead_count FROM leads GROUP BY source",
+        `SELECT source, 
+                COUNT(*) as lead_count,
+                SUM(CASE WHEN status = 'Qualified' THEN 1 ELSE 0 END) as qualified_count,
+                SUM(CASE WHEN status = 'In Pipeline' THEN 1 ELSE 0 END) as pipeline_count
+         FROM leads 
+         GROUP BY source`,
         []
       );
 
-      const leadSourceMap: Record<string, number> = {};
+      const leadSourceMap: Record<string, { total: number; qualified: number; inPipeline: number }> = {};
       leadsBySourceRes.data.forEach((r) => {
-        leadSourceMap[r.source] = r.lead_count;
+        leadSourceMap[r.source] = {
+          total: r.lead_count || 0,
+          qualified: r.qualified_count || 0,
+          inPipeline: r.pipeline_count || 0,
+        };
       });
 
       const topChannels: ChannelMetrics[] = channelsRes.data.map((c) => {
         const vCount = c.visitors || 1;
-        const lCount = leadSourceMap[c.source] || 0;
-        const conv = ((lCount / vCount) * 100).toFixed(1);
+        const lStats = leadSourceMap[c.source] || { total: 0, qualified: 0, inPipeline: 0 };
+        const conv = ((lStats.total / vCount) * 100).toFixed(1);
         const share = uniqueVisitors > 0 ? `${Math.round((vCount / uniqueVisitors) * 100)}%` : "0%";
         return {
           channel: c.source || "Direct / Organic",
           visitors: vCount,
-          leads: lCount,
+          leads: lStats.total,
           conversionRate: `${conv}%`,
           share,
+        };
+      });
+
+      const conversionAttribution: ConversionAttributionMetrics[] = channelsRes.data.map((c) => {
+        const vCount = c.visitors || 1;
+        const lStats = leadSourceMap[c.source] || { total: 0, qualified: 0, inPipeline: 0 };
+        const conv = ((lStats.total / vCount) * 100).toFixed(1);
+        return {
+          source: c.source || "Direct / Organic",
+          visitors: vCount,
+          totalLeads: lStats.total,
+          qualifiedLeads: lStats.qualified,
+          inPipelineLeads: lStats.inPipeline,
+          conversionRate: `${conv}%`,
         };
       });
 
@@ -431,7 +493,7 @@ export async function getAdminAnalyticsSummary(
          WHERE ts >= ?
          GROUP BY path
          ORDER BY views DESC
-         LIMIT 8`,
+         LIMIT 15`,
         [fromTs]
       );
 
@@ -454,7 +516,7 @@ export async function getAdminAnalyticsSummary(
          WHERE ts >= ?
          GROUP BY section_id
          ORDER BY avg_dwell DESC
-         LIMIT 8`,
+         LIMIT 12`,
         [fromTs]
       );
 
@@ -464,7 +526,71 @@ export async function getAdminAnalyticsSummary(
         avgDwellSec: Math.round(s.avg_dwell || 0),
       }));
 
-      // 5. Geo (Countries & Cities)
+      // 5. Referrer Breakdown
+      const referrersRes = await executeD1Query<{
+        referrer: string;
+        visitors: number;
+        pageviews: number;
+      }>(
+        db,
+        `SELECT referrer, COUNT(DISTINCT visitor_id) as visitors, COUNT(*) as pageviews
+         FROM page_views
+         WHERE ts >= ? AND referrer != ''
+         GROUP BY referrer
+         ORDER BY visitors DESC
+         LIMIT 15`,
+        [fromTs]
+      );
+
+      const referrerBreakdown: ReferrerMetrics[] = referrersRes.data.map((r) => ({
+        referrer: r.referrer,
+        visitors: r.visitors,
+        pageviews: r.pageviews,
+        leads: 0,
+      }));
+
+      const topReferrers = referrersRes.data.map((r) => ({
+        referrer: r.referrer,
+        count: r.visitors,
+      }));
+
+      // 6. UTM Attribution Breakdown
+      const utmRes = await executeD1Query<{
+        source: string;
+        medium: string;
+        campaign: string;
+        content: string;
+        term: string;
+        visitors: number;
+      }>(
+        db,
+        `SELECT source, medium, campaign, content, term, COUNT(DISTINCT visitor_id) as visitors
+         FROM sessions
+         WHERE start_time >= ? AND (campaign != '' OR medium != '')
+         GROUP BY source, medium, campaign, content, term
+         ORDER BY visitors DESC
+         LIMIT 15`,
+        [fromTs]
+      );
+
+      const utmBreakdown: UtmMetrics[] = utmRes.data.map((u) => ({
+        source: u.source,
+        medium: u.medium || "(none)",
+        campaign: u.campaign || "(direct)",
+        content: u.content || "(none)",
+        term: u.term || "(none)",
+        visitors: u.visitors,
+        leads: 0,
+        conversionRate: "0.0%",
+      }));
+
+      const topCampaigns = utmRes.data.map((u) => ({
+        campaign: u.campaign || "(direct)",
+        visitors: u.visitors,
+        leads: 0,
+      }));
+
+      // 7. Geo (Countries & Cities)
       const [countriesRes, citiesRes] = await Promise.all([
         executeD1Query<{ country: string; count: number }>(
           db,
@@ -473,7 +599,7 @@ export async function getAdminAnalyticsSummary(
            WHERE ts >= ? AND country != ''
            GROUP BY country
            ORDER BY count DESC
-           LIMIT 6`,
+           LIMIT 10`,
           [fromTs]
         ),
         executeD1Query<{ city: string; count: number }>(
@@ -483,7 +609,7 @@ export async function getAdminAnalyticsSummary(
            WHERE ts >= ? AND city != ''
            GROUP BY city
            ORDER BY count DESC
-           LIMIT 6`,
+           LIMIT 10`,
           [fromTs]
         ),
       ]);
@@ -500,8 +626,8 @@ export async function getAdminAnalyticsSummary(
         percentage: uniqueVisitors > 0 ? Math.round((c.count / uniqueVisitors) * 100) : 0,
       }));
 
-      // 6. Devices & Browsers
-      const [devicesRes, browsersRes] = await Promise.all([
+      // 8. Devices, Browsers, and OS
+      const [devicesRes, browsersRes, osRes] = await Promise.all([
         executeD1Query<{ device: string; count: number }>(
           db,
           `SELECT device, COUNT(DISTINCT visitor_id) as count
@@ -520,6 +646,15 @@ export async function getAdminAnalyticsSummary(
            ORDER BY count DESC`,
           [fromTs]
         ),
+        executeD1Query<{ os: string; count: number }>(
+          db,
+          `SELECT os, COUNT(DISTINCT visitor_id) as count
+           FROM page_views
+           WHERE ts >= ?
+           GROUP BY os
+           ORDER BY count DESC`,
+          [fromTs]
+        ),
       ]);
 
       const deviceBreakdown: DeviceMetrics[] = devicesRes.data.map((d) => ({
@@ -534,7 +669,13 @@ export async function getAdminAnalyticsSummary(
         percentage: uniqueVisitors > 0 ? Math.round((b.count / uniqueVisitors) * 100) : 0,
       }));
 
-      // 7. Historical Traffic Series (7D, 30D, 1Y)
+      const osBreakdown: DeviceMetrics[] = osRes.data.map((o) => ({
+        name: o.os || "Other",
+        count: o.count,
+        percentage: uniqueVisitors > 0 ? Math.round((o.count / uniqueVisitors) * 100) : 0,
+      }));
+
+      // 9. Historical Traffic Series (7D, 30D, 1Y)
       const trafficSeries = await buildTrafficSeries(db, range, totalLeads);
 
       return {
@@ -548,19 +689,24 @@ export async function getAdminAnalyticsSummary(
           totalPageviews,
           todayVisitors,
           todayPageviews,
+          avgTimeOnPageSec,
           totalLeads,
           overallConversionRate,
         },
         trafficSeries,
         topChannels,
-        topReferrers: [],
-        topCampaigns: [],
+        utmBreakdown,
+        referrerBreakdown,
+        topReferrers,
+        topCampaigns,
         topPages,
         sectionEngagement,
         topCountries,
         topCities,
         deviceBreakdown,
         browserBreakdown,
+        osBreakdown,
+        conversionAttribution,
       };
     } catch (d1Err) {
       console.error("[AnalyticsStore] D1 summary aggregation failed:", d1Err);
@@ -664,11 +810,14 @@ function buildEmptyDevSummary(range: "7d" | "30d" | "1y"): AdminAnalyticsData {
       totalPageviews: 0,
       todayVisitors: 0,
       todayPageviews: 0,
+      avgTimeOnPageSec: 0,
       totalLeads: 0,
       overallConversionRate: "0.0%",
     },
     trafficSeries: points,
     topChannels: [],
+    utmBreakdown: [],
+    referrerBreakdown: [],
     topReferrers: [],
     topCampaigns: [],
     topPages: [],
@@ -677,5 +826,7 @@ function buildEmptyDevSummary(range: "7d" | "30d" | "1y"): AdminAnalyticsData {
     topCities: [],
     deviceBreakdown: [],
     browserBreakdown: [],
+    osBreakdown: [],
+    conversionAttribution: [],
   };
 }
