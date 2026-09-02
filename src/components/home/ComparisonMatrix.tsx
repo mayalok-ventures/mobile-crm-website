@@ -78,7 +78,12 @@ const MATRIX_DATA: MatrixRow[] = [
 
 export const ComparisonMatrix: React.FC = () => {
   return (
-    <div className="w-full">
+    <div className="w-full space-y-2.5">
+      {/* Mobile Horizontal Scroll Indicator */}
+      <div className="sm:hidden flex items-center justify-center gap-1.5 text-[11px] font-mono text-slate-500 py-1.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
+        <span>&larr; Scroll horizontally to compare all platforms &rarr;</span>
+      </div>
+
       <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-lg">
         {/* Table View */}
         <div className="overflow-x-auto">

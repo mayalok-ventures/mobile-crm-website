@@ -47,13 +47,13 @@ export default function Home() {
             transition={{ duration: 0.5, ease: customEasing }}
             className="flex justify-center"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-slate-200 shadow-2xs text-xs font-medium text-slate-700">
-              <span className="flex h-2 w-2 rounded-full bg-[#0077ff] animate-pulse" />
+            <div className="inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-white border border-slate-200 shadow-2xs text-[11px] sm:text-xs font-medium text-slate-700 text-center">
+              <span className="flex h-2 w-2 rounded-full bg-[#0077ff] animate-pulse shrink-0" />
               <span className="font-semibold text-slate-900">Sub-2s Speed-to-Lead</span>
-              <span className="text-slate-300">|</span>
-              <span>WhatsApp &amp; Meta Native</span>
-              <span className="text-slate-300">|</span>
-              <span className="text-slate-500 font-mono text-[11px]">Mobile Field Closer</span>
+              <span className="hidden min-[380px]:inline text-slate-300">|</span>
+              <span className="hidden min-[380px]:inline">WhatsApp &amp; Meta Native</span>
+              <span className="hidden md:inline text-slate-300">|</span>
+              <span className="hidden md:inline text-slate-500 font-mono text-[11px]">Mobile Field Closer</span>
             </div>
           </motion.div>
 

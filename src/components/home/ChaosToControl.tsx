@@ -62,28 +62,28 @@ export const ChaosToControl: React.FC = () => {
         {/* Right Side: Interactive Reality Switcher */}
         <div className="lg:col-span-7 space-y-6">
           {/* Toggle Control */}
-          <div className="flex items-center justify-between gap-4 p-1.5 bg-slate-100 rounded-2xl border border-slate-200">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 p-1.5 bg-slate-100 rounded-2xl border border-slate-200">
             <button
               onClick={() => setViewState("chaos")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 viewState === "chaos"
                   ? "bg-white text-rose-900 shadow-sm border border-rose-200 font-bold"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              <FileSpreadsheet className="w-4 h-4 text-rose-500" />
+              <FileSpreadsheet className="w-4 h-4 text-rose-500 shrink-0" />
               <span>Spreadsheet &amp; Manual Chaos</span>
             </button>
 
             <button
               onClick={() => setViewState("control")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 viewState === "control"
                   ? "bg-white text-[#0084ff] shadow-sm border border-blue-200 font-bold"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              <Zap className="w-4 h-4 text-[#0084ff]" />
+              <Zap className="w-4 h-4 text-[#0084ff] shrink-0" />
               <span>Sahyak Automated Pipeline</span>
             </button>
           </div>

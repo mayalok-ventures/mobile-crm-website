@@ -89,8 +89,9 @@ export function GlobalNavbar() {
         <div className="flex md:hidden items-center">
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="p-2 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
+            className="p-2.5 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors touch-target-44 flex items-center justify-center cursor-pointer"
             aria-label="Toggle navigation menu"
+            aria-expanded={mobileOpen}
           >
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>

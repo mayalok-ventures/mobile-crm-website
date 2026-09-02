@@ -185,7 +185,7 @@ export const MobileFirstSection: React.FC = () => {
           </div>
 
           {/* Smartphone Frame */}
-          <div className="w-full max-w-[310px] sm:max-w-[330px] bg-slate-950 rounded-[44px] p-3 shadow-2xl border-4 border-slate-800 relative z-10">
+          <div className="w-full max-w-[275px] min-[360px]:max-w-[305px] sm:max-w-[330px] bg-slate-950 rounded-[44px] p-3 shadow-2xl border-4 border-slate-800 relative z-10">
             {/* Phone Notch */}
             <div className="absolute top-5 left-1/2 -translate-x-1/2 w-28 h-4 bg-slate-950 rounded-full z-20 flex items-center justify-center">
               <div className="w-2.5 h-2.5 rounded-full bg-slate-900 mr-2" />

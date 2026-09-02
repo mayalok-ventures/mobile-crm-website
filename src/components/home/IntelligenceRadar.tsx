@@ -106,7 +106,7 @@ export const IntelligenceRadar: React.FC = () => {
               onClick={() => setActiveSignalId(sig.id)}
               className={`p-4 rounded-xl text-left transition-all duration-200 relative border cursor-pointer ${
                 isActive
-                  ? "bg-blue-50/80 text-slate-900 border-[#0084ff] shadow-md shadow-blue-500/10 scale-[1.02]"
+                  ? "bg-blue-50/80 text-slate-900 border-[#0084ff] shadow-md shadow-blue-500/10 ring-1 ring-[#0084ff]"
                   : "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
               }`}
             >

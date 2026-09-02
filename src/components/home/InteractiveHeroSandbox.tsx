@@ -52,7 +52,7 @@ export const InteractiveHeroSandbox: React.FC = () => {
     <div className="w-full relative group">
       {/* 1. Ambient Lighting Behind Product Stage */}
       <div
-        className="absolute -inset-4 sm:-inset-8 rounded-3xl stage-ambient-glow pointer-events-none -z-10 blur-xl opacity-80"
+        className="absolute inset-0 sm:-inset-6 rounded-3xl stage-ambient-glow pointer-events-none -z-10 blur-xl opacity-80"
         aria-hidden="true"
       />
 

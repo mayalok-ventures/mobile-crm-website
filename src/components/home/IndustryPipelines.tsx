@@ -478,10 +478,10 @@ export const IndustryPipelines: React.FC = () => {
                 {activeIndustry.customFields.map((field) => (
                   <div
                     key={field.label}
-                    className="p-2.5 rounded-lg bg-white border border-slate-200/80 flex items-center justify-between text-xs"
+                    className="p-2.5 rounded-lg bg-white border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs"
                   >
                     <span className="text-slate-500">{field.label}:</span>
-                    <span className="font-mono font-bold text-slate-900">{field.example}</span>
+                    <span className="font-mono font-bold text-slate-900 break-words">{field.example}</span>
                   </div>
                 ))}
               </div>
