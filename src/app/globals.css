@@ -126,6 +126,29 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* Fade-in animation for floating depth cards on hero */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+}
+
 ::selection {
   background: #0077ff;
   color: #ffffff;

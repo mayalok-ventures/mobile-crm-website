@@ -13,7 +13,6 @@ import {
   FloatingProposalCard,
   LocationSiteVisitChip,
   VoiceNoteWaveformStrip,
-  LeadRouteConnector,
 } from "@/components/ui/LeadDepthAssets";
 
 export const MobileFirstSection: React.FC = () => {

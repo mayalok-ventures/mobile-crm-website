@@ -62,7 +62,7 @@ const MATRIX_DATA: MatrixRow[] = [
     capability: "Pricing Transparency & Economics",
     category: "Value",
     icon: DollarSign,
-    sahyak: "Flat ₹639/mo (Predictable growth)",
+    sahyak: "From ₹999/mo (Per Team, Zero Setup Fees)",
     spreadsheets: "Free (Costs lost ad pipeline revenue)",
     legacyCrm: "₹8,000+/user/mo + mandatory tier upsells",
   },

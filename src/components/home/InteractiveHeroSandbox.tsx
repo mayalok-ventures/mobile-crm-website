@@ -5,7 +5,6 @@ import { Zap, ShieldCheck, Play, Pause, Smartphone } from "lucide-react";
 import {
   LeadSourceSignal,
   FloatingProposalCard,
-  LeadRouteConnector,
 } from "@/components/ui/LeadDepthAssets";
 
 export const InteractiveHeroSandbox: React.FC = () => {

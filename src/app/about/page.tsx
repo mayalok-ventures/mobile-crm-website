@@ -156,6 +156,7 @@ export default function AboutPage() {
                 disablePictureInPicture
                 controls={false}
                 controlsList="nodownload nofullscreen noremoteplayback"
+                poster="/android-chrome-512x512.png"
                 onContextMenu={(e) => e.preventDefault()}
                 className="w-full h-full object-contain pointer-events-none select-none"
               />
