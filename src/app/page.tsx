@@ -11,6 +11,7 @@ import {
 
 import { InteractiveHeroSandbox } from "@/components/home/InteractiveHeroSandbox";
 import { ChaosToControl } from "@/components/home/ChaosToControl";
+import { CompetitivePositioning } from "@/components/home/CompetitivePositioning";
 import { MobileFirstSection } from "@/components/home/MobileFirstSection";
 import { LeadVelocityConduit } from "@/components/home/LeadVelocityConduit";
 import { IntelligenceRadar } from "@/components/home/IntelligenceRadar";
@@ -147,6 +148,11 @@ export default function Home() {
           <ChaosToControl />
         </div>
       </motion.section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          2.5. ARCHITECTURAL POSITIONING (THE SAHYAK SWEET SPOT)
+      ───────────────────────────────────────────────────────────── */}
+      <CompetitivePositioning />
 
       {/* ─────────────────────────────────────────────────────────────
           3. DEDICATED MOBILE-FIRST CLOSER ENGINE

@@ -98,7 +98,7 @@ export default function TermsOfServicePage() {
             4. Subscriptions, Seat Scaling, Billing & Strict &quot;No Refund&quot; Policy
           </h2>
           <p>
-            4.1. <strong>Recurring Subscription Billing:</strong> Access to Sahyak CRM operates on a pre-paid recurring subscription model (billed on a monthly or annual schedule, as designated in Customer&apos;s workspace). Fees comprise: (a) base per-seat license charges (e.g., ₹999/user/month or ₹799/user/month on annual billing), and (b) selected expansion modules (High-Velocity Ingestion, Enterprise Telemetry, Data Vault).
+            4.1. <strong>Recurring Subscription Billing:</strong> Access to Sahyak CRM operates on a pre-paid recurring subscription model (billed on a monthly or annual schedule, as designated in Customer&apos;s workspace). Fees comprise: (a) base subscription plan charges (e.g., Solo or Company tiers as published on our Pricing page), and (b) selected usage expansion modules and additional team seats.
           </p>
           <p>
             4.2. <strong>Dynamic Seat Scaling:</strong> Workspace administrators may add or deactivate field agent seats dynamically. Seat additions are immediately billed on a pro-rated basis for the remainder of the billing cycle. Seat deactivations take effect at the conclusion of the active billing period; no refunds or credits are issued for mid-cycle seat decreases.

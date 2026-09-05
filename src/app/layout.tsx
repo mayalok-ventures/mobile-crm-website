@@ -133,7 +133,7 @@ const structuredData = {
       "image": "https://sahyak.com/android-chrome-512x512.png",
       "offers": {
         "@type": "Offer",
-        "price": "999",
+        "price": "499",
         "priceCurrency": "INR",
         "priceValidUntil": "2027-12-31",
         "availability": "https://schema.org/InStock",
